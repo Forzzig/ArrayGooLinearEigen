@@ -71,7 +71,7 @@ int main() {
 	cout << tmpD << endl;
 	for (int i = 0; i < 12; ++i)
 		cout << a[i] << " " << endl;*/
-	SparseMatrix<double> A = mtxio::getSparseMatrix("./matrix/bcsstk19.mtx");
+	SparseMatrix<double> A = mtxio::getSparseMatrix("./matrix/bcsstk17.mtx");
 	SparseMatrix<double> B(A.rows(), A.cols());
 	B.reserve(A.rows());
 	for (int i = 0; i < A.rows(); ++i)
@@ -79,7 +79,7 @@ int main() {
 	cout << "矩阵阶数：" << A.rows() << endl;
 	cout << "LOBPCG_I开始求解..." << endl;
 	LOBPCG_I LP1(A, B, 20, 40);
-	//LP1.compute();
+	LP1.compute();
 	///*cout << "原始GCG开始求解..." << endl;
 	//GCG_sv gsv(A, B, 10, 40, 10);
 	//gsv.compute();*/
@@ -93,12 +93,12 @@ int main() {
 	JD jd(A, B, 20, 5, 8, 20);
 	jd.compute();
 	system("cls");
-	//for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
-	//	cout << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << endl;
-	//	//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-	//	cout << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
-	//}
-	//cout << "LOBPCG_I迭代次数" << LP1.nIter << endl;
+	for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
+		cout << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << endl;
+		//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
+		cout << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
+	}
+	cout << "LOBPCG_I迭代次数" << LP1.nIter << endl;
 	////for (int i = 0; i < gsv.eigenvalues.size(); ++i) {
 	////	cout << "第" << i + 1 << "个特征值：" << gsv.eigenvalues[i] << endl;
 	////	//cout << "第" << i + 1 << "个特征向量：" << gcg.eigenvectors.col(i).transpose() << endl;
