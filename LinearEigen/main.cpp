@@ -71,7 +71,7 @@ int main() {
 	cout << tmpD << endl;
 	for (int i = 0; i < 12; ++i)
 		cout << a[i] << " " << endl;*/
-	SparseMatrix<double> A = mtxio::getSparseMatrix("bcsstk19.mtx");
+	SparseMatrix<double> A = mtxio::getSparseMatrix("./matrix/bcsstk19.mtx");
 	SparseMatrix<double> B(A.rows(), A.cols());
 	B.reserve(A.rows());
 	for (int i = 0; i < A.rows(); ++i)
