@@ -145,10 +145,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="IterRitz.cpp" />
     <ClCompile Include="JD.cpp" />
     <ClCompile Include="LOBPCG_I.cpp" />
     <ClCompile Include="LinearEigenSolver.cpp" />
-    <ClCompile Include="LOBPCG_solver.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mtxio.cpp" />
   </ItemGroup>
@@ -156,10 +156,10 @@
     <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IterRitz.h" />
     <ClInclude Include="JD.h" />
     <ClInclude Include="LOBPCG_I.h" />
     <ClInclude Include="LinearEigenSolver.h" />
-    <ClInclude Include="LOBPCG_solver.h" />
     <ClInclude Include="mtxio.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

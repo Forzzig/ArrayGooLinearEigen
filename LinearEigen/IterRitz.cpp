@@ -38,6 +38,8 @@ void IterRitz::compute() {
 				rls = tmp.transpose() * A * tmp;
 				for (int j = 0; j < q; ++j)
 					LAM(j, 0) = rls(j, j);
+				orthogonalization(X1.block(0, 0, A.rows(), q), eigenvectors, B);
+				orthogonalization(X1.block(0, 0, A.rows(), q), B);
 			}
 			else {
 				/*tmp = B * X1.block(0, (i - 1) * q, A.rows(), q);
@@ -52,14 +54,16 @@ void IterRitz::compute() {
 				X1.block(0, i * q, A.rows(), q) = linearsolver.solve(rls); 
 				tmp -= X1.block(0, i * q, A.rows(), q);
 			}
-			
-			orthogonalization(X1, i * q, (i + 1) * q, 0, i * q, B);
-			orthogonalization(X1, i * q, (i + 1) * q, B);
+			orthogonalization(X1.block(0, i * q, A.rows(), q), eigenvectors, B);
+			orthogonalization(X1.block(0, i * q, A.rows(), q), X1.block(0, 0, A.rows(), i * q), B);
+			orthogonalization(X1.block(0, i * q, A.rows(), q), B);
 		}
+		orthogonalization(P, X1, B);
+		orthogonalization(P, B);
 		V.resize(A.rows(), P.cols() + X1.cols());
 		V << X1, P;
-		orthogonalization(V, eigenvectors, B);
-		orthogonalization(V, B);
+		//orthogonalization(V, eigenvectors, B);
+		//orthogonalization(V, B);
 		cout << V.cols() << endl;
 		projection_RR(V, A, eval, evec);
 		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
@@ -72,24 +76,13 @@ void IterRitz::compute() {
 		//cout << Xnew << endl;
 		system("cls");
 		P = X;
-		cnv = conv_check(eval, Xnew, shift, LAM, X);
+		cnv = conv_select(eval, Xnew, shift, LAM, X);
 		//system("pause");
 		cout << "已收敛特征向量个数：" << cnv << endl;
-		/*if (nIter == 8) {
-			cout << Xnew << endl << "-----------------" << endl;
-			cout << X << endl << "--------------------" << endl;
-			cout << LAM << endl;
-			system("pause");
-		}*/
-		/*if (cnv > 0)
-			system("pause");*/
+
 		if (cnv >= nev) {
 			break;
 		}
-		/*if (eigenvalues.size())
-			shift = ((eval.col(0)[nev - X0.cols() + cnv - 1] - shift) - 100 * (eigenvalues[0])) / 99;
-		else
-			shift = ((eval.col(0)[nev - 1] - shift) - 100 * (eval.col(0)[0] - shift)) / 99;*/
 
 	}
 }
