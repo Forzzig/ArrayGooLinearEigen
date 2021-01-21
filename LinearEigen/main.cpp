@@ -90,7 +90,7 @@ int main() {
 	IterRitz iritz(A, B, 20, 10, 20, 3);
 	//iritz.compute();
 	cout << "JD开始求解..." << endl;
-	JD jd(A, B, 20, 20, 5, 20, 20);
+	JD jd(A, B, 20, 100, 10, 5, 10);
 	jd.compute();
 	system("cls");
 	for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
