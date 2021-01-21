@@ -254,17 +254,20 @@ public:
 		for (int j = 0; j < A.rows(); ++j)
 			K1.insert(j, j) = 1;
 		tmpA = A;
-		for (int i = 0; i < b.cols(); ++i) {
-			/*if (i == 0) {
+
+		//注意K逆的生成
+		/*if (i == 0) {
 				tmpA -= lam(0, 0) * B;
 			}
 			else {
 				tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
 			}*/
-			//取预处理矩阵为对角阵
-			for (int j = 0; j < A.rows(); ++j)
-				K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
-			Minv_set(U);
+		//取预处理矩阵为对角阵
+		for (int j = 0; j < A.rows(); ++j)
+			K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
+		Minv_set(U);
+
+		for (int i = 0; i < b.cols(); ++i) {
 			
 			MatrixXd x(tmpA.rows() + U.cols(), 1);
 			x.block(0, 0, tmpA.rows(), 1) = X.col(i);
