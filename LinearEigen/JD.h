@@ -268,24 +268,26 @@ public:
 			K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
 		Minv_set(U);
 
+		MatrixXd x(tmpA.rows() + U.cols(), 1);
+		MatrixXd r(x.rows(), 1);
+		MatrixXd tpw(x.rows(), 1);
+		MatrixXd V(x.rows(), m);
+		MatrixXd H(m + 1, m);
+		MatrixXd y;
+
 		for (int i = 0; i < b.cols(); ++i) {
 			
-			MatrixXd x(tmpA.rows() + U.cols(), 1);
 			x.block(0, 0, tmpA.rows(), 1) = X.col(i);
 			x.block(tmpA.rows(), 0, U.cols(), 1) = MatrixXd::Zero(U.cols(), 1);
 
 			int maxit = cgstep / m;
 			for (int it = 0; it < maxit; ++it) {
 				
-				MatrixXd r(x.rows(), 1);
 				A_mul(U, x, r);
 				r.block(0, 0, tmpA.rows(), 1) -= b.col(i);
-				MatrixXd tpw(x.rows(), 1);
 				tpw = -r;
 				Minv_mul(U, tpw, r);
 
-				MatrixXd V(x.rows(), m);
-				MatrixXd H(m + 1, m);
 				double beta = r.norm();
 				V.col(0) = r / beta;
 				MatrixXd w(x.rows(), 1);
@@ -308,7 +310,7 @@ public:
 				}
 
 				//Çó½ây
-				MatrixXd y = MatrixXd::Zero(H.rows(), 1);
+				y = MatrixXd::Zero(H.rows(), 1);
 				y(0, 0) = beta;
 				for (int j = 0; j < H.rows() - 1; ++j) {
 					double tmp = sqrt(H(j, j) * H(j, j) + H(j + 1, j) * H(j + 1, j));
