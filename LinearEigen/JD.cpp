@@ -1,9 +1,9 @@
 #include<JD.h>
 
-JD::JD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size) : LinearEigenSolver(A, B, nev) {
-	this->restart = restart;
-	this->gmres_size = gmres_size;
-	V.resize(A.rows(), batch * restart);
+JD::JD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size)
+	: LinearEigenSolver(A, B, nev), restart(restart), gmres_size(gmres_size), cgstep(cgstep), batch(batch), 
+	U(A.rows(), nev + batch * restart), V(&U(0, 0), U.rows(), batch * restart) {
+
 	Map<MatrixXd> V1(&V(0, 0), A.rows(), batch);
 	V1 = MatrixXd::Random(A.rows(), batch);
 	orthogonalization(V1, B);
@@ -12,8 +12,6 @@ JD::JD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, in
 	W1 = A * V1;
 	H.resize(batch * restart, batch * restart);
 	H.block(0, 0, batch, batch) = V1.transpose() * W1;
-	this->cgstep = cgstep;
-	this->batch = batch;
 	eigenvectors.resize(A.rows(), 0);
 
 	//cout << scientific << setprecision(32);
@@ -50,40 +48,65 @@ void JD::compute() {
 	while (true) {
 		++nIter;
 		int i;
-		MatrixXd tmpeval, tmpevec;
-		for (i = 1; i <= restart; ++i) {
+		//Map<MatrixXd> ui(&U(0, 0), U.rows(), 0);
+		for (i = 0; i < restart; ++i) {
 			system("cls");
 			cout << "第" << nIter - 1 << "轮重启：" << endl;
-			cout << "迭代步：" << i << endl;
+			cout << "迭代步：" << i + 1 << endl;
 			eval.resize(Vj.cols(), 1);
 			evec.resize(Vj.cols(), Vj.cols());
 			cout << Vj.cols() << endl;
 			RR(H.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
-			//注意eval长度是偏长的
-			MatrixXd ui = Vj * evec.block(0, 0, Vj.cols(), batch);
-			MatrixXd ri = MatrixXd::Zero(ui.rows(), ui.cols());
-			for (int j = 0; j < ri.cols(); ++j) {
-				ri.col(j) += B * ui.col(j) * eval(j, 0);
+			
+			MatrixXd tmpu = Vj * evec.leftCols(batch);
+			
+			vector<int> cnv = conv_check(eval, tmpu, 0);
+			if (cnv.size()) {
+				int new_cnv = 0;
+				int new_ui = 0;
+				int prev = eigenvalues.size();
+				new (&V) Map<MatrixXd>(&U(0, prev + cnv.size()), U.rows(), batch * restart);
+				new (&Vj) Map<MatrixXd>(&V(0, 0), V.rows(), batch - cnv.size());
+				for (int j = 0; j < tmpu.cols(); ++j) {
+					if (eigenvalues.size() == nev)
+						break;
+					if ((new_cnv < cnv.size()) && (j == cnv[new_cnv])) {
+						eigenvalues.push_back(eval(j, 0));
+						eigenvectors.col(prev + new_cnv) = tmpu.col(j);
+						U.col(prev + new_cnv) = tmpu.col(j);
+						++new_cnv;
+					}
+					else {
+						Vj.col(new_ui) = tmpu.col(j);
+						++new_ui;
+					}
+				}
+				orthogonalization(Vj, Map<MatrixXd>(&eigenvectors(0, 0), A.rows(), eigenvalues.size()), B);
+				orthogonalization(Vj, B);
+				break;
 			}
-			ri -= A * ui;
-			int prev = eigenvalues.size();
-			tmpeval.resize(batch, 1);
-			tmpevec.resize(A.rows(), batch);
-			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
-			if (cnv > prev)
+			else if (i == restart - 1) {
+				new (&Vj) Map<MatrixXd>(&V(0, 0), V.rows(), batch);
+				for (int j = 0; j < tmpu.cols(); ++j)
+					Vj.col(j) = tmpu.col(j);
 				break;
-			if (i == restart)
-				break;
+			}
 
+			MatrixXd ri = MatrixXd::Zero(tmpu.rows(), batch);
+			for (int j = 0; j < ri.cols(); ++j) {
+				ri.col(j) += B * tmpu.col(j) * eval(j, 0);
+			}
+			ri -= A * tmpu.leftCols(batch);
+			
 			Map<MatrixXd> X(&V(0, Vj.cols()), A.rows(), ri.cols());
 			X = MatrixXd::Zero(A.rows(), ri.cols());
 			
+			Map<MatrixXd> ui(&U(0, 0), U.rows(), eigenvalues.size() + Vj.cols());
 			L_GMRES(A, B, ri, ui, X, eval, gmres_size);
 			//cout << X << endl << endl;
-			orthogonalization(X, eigenvectors, B);
+			orthogonalization(X, ui, B);
 			//cout << X << endl << endl;
 			//cout << Vj << endl << endl;
-			orthogonalization(X, Vj, B);
 			//cout << X << endl << endl;
 			int dep = orthogonalization(X, B);
 			//cout << X << endl << endl;
@@ -105,11 +128,6 @@ void JD::compute() {
 		}
 		if (eigenvalues.size() >= nev)
 			break;
-		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), batch);
-		Vj = tmpevec.block(0, 0, A.rows(), batch);
-		if (eigenvalues.size() > 0)
-			orthogonalization(Vj, Map<MatrixXd>(&eigenvectors(0, 0), A.rows(), eigenvalues.size()), B);
-		orthogonalization(Vj, B);
 		Map<MatrixXd> tmpW(&W(0, Vj.cols()), A.rows(), Vj.cols());
 		tmpW = A * Vj;
 		H.block(0, 0, Vj.cols(), Vj.cols()) = Vj.transpose() * tmpW;

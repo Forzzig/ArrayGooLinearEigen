@@ -18,7 +18,7 @@ LOBPCG_I::LOBPCG_I(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, in
 }
 
 void LOBPCG_I::compute() {
-	int cnv = 0;
+	vector<int> cnv;
 	MatrixXd eval, evec, tmp, tmpA, mu;
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols()), vl(storage, 0, 0);
 	while (true) {
@@ -48,9 +48,9 @@ void LOBPCG_I::compute() {
 		new (&vl) Map<MatrixXd>(&(eval(0, 0)), nev, 1);
 		
 		cnv = conv_check(vl, X, 0);
-		cout << "已收敛特征向量个数：" << cnv << endl;
+		cout << "已收敛特征向量个数：" << cnv.size() << endl;
 
-		if (cnv >= nev) {
+		if (cnv.size() >= nev) {
 			eigenvectors = X;
 			for (int i = 0; i < nev; ++i)
 				eigenvalues.push_back(eval(i, 0));

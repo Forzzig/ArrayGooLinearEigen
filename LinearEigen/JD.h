@@ -10,7 +10,8 @@ using namespace Eigen;
 class JD : public LinearEigenSolver {
 public:
 	int restart, gmres_size;
-	MatrixXd V, W, H;
+	MatrixXd W, H, U;
+	Map<MatrixXd> V;
 	MatrixXd Y, v;
 	SparseMatrix<double> K1, tmpA;
 	int cgstep;
