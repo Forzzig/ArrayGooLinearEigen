@@ -58,7 +58,7 @@ void JD::compute() {
 			cout << Vj.cols() << endl;
 			RR(H.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
 			
-			MatrixXd tmpu = Vj * evec.leftCols(batch);
+			MatrixXd tmpu = Vj * evec;
 			
 			vector<int> cnv = conv_check(eval, tmpu, 0);
 			if (cnv.size()) {
@@ -102,7 +102,7 @@ void JD::compute() {
 			X = MatrixXd::Zero(A.rows(), ri.cols());
 			
 			Map<MatrixXd> ui(&U(0, 0), U.rows(), eigenvalues.size() + Vj.cols());
-			L_GMRES(A, B, ri, ui, X, eval, gmres_size);
+			L_GMRES(A, B, ri, tmpu, X, eval, gmres_size);
 			//cout << X << endl << endl;
 			orthogonalization(X, ui, B);
 			//cout << X << endl << endl;

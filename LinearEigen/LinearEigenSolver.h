@@ -169,7 +169,6 @@ vector<int> LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, 
 	MatrixXd tmp1, tmp2;
 	int flag = LinearEigenSolver::CHECKNUM;
 	vector<int> hitpos;
-	vector<int> goonpos;
 	vector<double> ans;
 	for (int i = 0; i < evec.cols(); ++i) {
 		tmp1 = A * evec.col(i);
@@ -179,11 +178,12 @@ vector<int> LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, 
 	}
 	int prev = eigenvectors.cols();
 	for (int i = 0; i < evec.cols(); ++i) {
-		if ((ans[i] >= EIGTOL) || (flag <= 0) || (prev + hitpos.size() >= nev)) {
+		if ((ans[i] >= EIGTOL) || (prev + hitpos.size() >= nev)) {
 			cout << "检查第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
 			cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			goonpos.push_back(i);
 			--flag;
+			if (flag <= 0)
+				break;
 		}
 		else {
 			cout << "第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
