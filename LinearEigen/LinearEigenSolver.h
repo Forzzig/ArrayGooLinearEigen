@@ -15,6 +15,7 @@ public:
 	static double ORTH_TOL;
 	static double EIGTOL;
 	static int CHECKNUM;
+	static fstream coutput;
 	int nIter;
 	SparseMatrix<double>& A;
 	SparseMatrix<double>& B;

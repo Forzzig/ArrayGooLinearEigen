@@ -33,6 +33,12 @@
     <ClCompile Include="IterRitz.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="BJD.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BJD.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
