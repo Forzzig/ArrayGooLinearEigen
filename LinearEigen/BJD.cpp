@@ -25,32 +25,6 @@ BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, 
 	this->batch = batch;
 	eigenvectors.resize(A.rows(), 0);
 
-	//cout << scientific << setprecision(32);
-	////A.resize(20, 20);
-	////B.resize(20, 20);
-	////for (int i = 0; i < A.rows(); ++i) {
-	////	A.insert(i, i) = rand() + 1;
-	////	B.insert(i, i) = 1;
-	////	for (int j = i + 1; j < A.rows(); ++j) {
-	////		A.insert(i, j) = rand() + 1;
-	////		A.insert(j, i) = A.coeff(i, j);
-	////	}
-	////}
-	//MatrixXd b = MatrixXd::Random(A.rows(), 1);
-	//MatrixXd U = MatrixXd::Random(A.rows(), 2);
-	//MatrixXd X = MatrixXd::Zero(A.rows(), 1);
-	//MatrixXd lam(1, 1);
-	//lam(0, 0) = 0;
-
-	//cout << A << endl;
-	//cout << "-----------------------" << endl;
-	//cout << X << endl;
-	//cout << "-----------------------" << endl;
-	//cout << b << endl;
-	//cout << "-----------------------" << endl;
-	//cout << U << endl;
-	//system("pause");
-	//specialCG_Bad(A, B, b, U, X, lam);
 }
 
 void BJD::compute() {
@@ -125,6 +99,7 @@ void BJD::compute() {
 			Map<MatrixXd> tmpWB(&WB(0, Vj.cols()), A.rows(), X.cols());
 			tmpWB = B * X;
 			/*cout << tmpW << endl;*/
+
 			HA.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WAj;
 			HA.block(0, Vj.cols(), Vj.cols(), X.cols()) = HA.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
 			HA.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * tmpWA;
