@@ -86,7 +86,7 @@ void BJD::compute() {
 			tmpevec.resize(A.rows(), batch);
 
 			
-			coutput << "V--------------------------------" << endl << Vj << endl;
+			/*coutput << "V--------------------------------" << endl << Vj << endl;
 			coutput << "WA--------------------------------" << endl << WAj << endl;
 			coutput << "WB--------------------------------" << endl << WBj << endl;
 			coutput << "HA--------------------------------" << endl << HA.block(0, 0, Vj.cols(), Vj.cols()) << endl;
@@ -95,11 +95,11 @@ void BJD::compute() {
 			coutput << "H--------------------------------" << endl << H.block(0, 0, Vj.cols(), Vj.cols()) << endl;
 			coutput << "eval--------------------------------" << endl << eval << endl;
 			coutput << "evec--------------------------------" << endl << evec << endl;
-			coutput << "ui--------------------------------" << endl << ui << endl;
+			coutput << "ui--------------------------------" << endl << ui << endl;*/
 
 
 			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
-			system("pause");
+			/*system("pause");*/
 			if (cnv > prev)
 				break;
 			if (i == restart)
@@ -134,7 +134,7 @@ void BJD::compute() {
 			HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WBj;
 			HAB.block(0, Vj.cols(), Vj.cols(), X.cols()) = HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
 			HAB.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * tmpWB;
-			H.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * X;
+			H.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * Vj;
 			H.block(0, Vj.cols(), Vj.cols(), X.cols()) = H.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
 			H.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * X;
 

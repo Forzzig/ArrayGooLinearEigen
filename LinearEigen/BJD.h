@@ -35,6 +35,7 @@ public:
 	void compute();
 };
 
+//用来实现求解V'(A-tauB)'AV = lam*V'(A-tauB)'BV的，暂时不用
 template<typename Derived_HA, typename Derived_HB, typename Derived_HAB>
 void BJD::generalized_RR(Derived_HA& HA, Derived_HB& HB, Derived_HAB& HAB, double tau, MatrixXd& eigenvalues, MatrixXd& eigenvectors){
 	GeneralizedSelfAdjointEigenSolver<MatrixXd> ges;
@@ -43,6 +44,7 @@ void BJD::generalized_RR(Derived_HA& HA, Derived_HB& HB, Derived_HAB& HAB, doubl
 	eigenvectors = ges.eigenvectors();
 }
 
+//设定好用来求补空间的与U对应的Y和v
 template<typename Derived_U>
 void BJD::Minv_set(Derived_U& U) {
 	/*[Ki, U;]^(-1)
@@ -53,6 +55,7 @@ void BJD::Minv_set(Derived_U& U) {
 	v = v.inverse();
 }
 
+//给GMRES用的，给r左乘U对应的预处理矩阵
 template<typename Derived_U, typename Derived_r, typename Derived_z>
 void BJD::Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
 	/*[Ki, U;]^(-1)
@@ -63,12 +66,14 @@ void BJD::Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
 	z.block(0, 0, K1.rows(), 1) -= Y * z.block(K1.rows(), 0, U.cols(), 1);
 }
 
+//左乘A对应的增广矩阵
 template<typename Derived_U, typename Derived_r, typename Derived_z>
 void BJD::A_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
 	z.block(0, 0, tmpA.rows(), 1) = tmpA * r.block(0, 0, tmpA.rows(), 1) + U * r.block(tmpA.rows(), 0, U.cols(), 1);
 	z.block(tmpA.rows(), 0, U.cols(), 1) = U.transpose() * r.block(0, 0, tmpA.rows(), 1);
 }
 
+//左预处理GMRES，为BJD特化
 template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
 void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
 	//(求解：（I-UUT）（A-λB）z = b)
@@ -85,7 +90,7 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 		else {
 			tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
 		}*/
-		//取预处理矩阵为对角阵
+	//先取预处理矩阵为对角阵
 	for (int j = 0; j < A.rows(); ++j)
 		K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
 	Minv_set(U);
@@ -96,6 +101,8 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 		x.block(0, 0, tmpA.rows(), 1) = X.col(i);
 		x.block(tmpA.rows(), 0, U.cols(), 1) = MatrixXd::Zero(U.cols(), 1);
 
+		//由于CG和GMRES不能等价，因此用CG中的cgstep近似控制一下计算量
+		//这样cgstep仍然代表大矩阵乘法进行的次数，m为GMRES扩展子空间的大小，maxit为GMRES重启次数
 		int maxit = cgstep / m;
 		for (int it = 0; it < maxit; ++it) {
 
