@@ -17,6 +17,7 @@ public:
 	static int CHECKNUM;
 	static fstream coutput;
 	int nIter;
+	long long com_of_mul;
 	SparseMatrix<double>& A;
 	SparseMatrix<double>& B;
 	int nev;

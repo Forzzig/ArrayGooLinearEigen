@@ -33,14 +33,14 @@ int main() {
 	//给人看的就不用科学计数法了
 	//cout << scientific << setprecision(16);
 	string matrixName;
-	cin >> matrixName;
+	getline(cin, matrixName);
 	
 	//读A矩阵
 	SparseMatrix<double> A;
-	if (matrixName.length > 0)
+	if (matrixName.length() > 0)
 		A = mtxio::getSparseMatrix("./matrix/" + matrixName + ".mtx");
 	else
-		A = mtxio::getSparseMatrix("./matrix/bcsstk19.mtx");
+		A = mtxio::getSparseMatrix("./matrix/bcsstk01.mtx");
 
 	//B先用单位阵
 	SparseMatrix<double> B(A.rows(), A.cols());
@@ -48,14 +48,16 @@ int main() {
 	for (int i = 0; i < A.rows(); ++i)
 		B.insert(i, i) = 1;
 	cout << "矩阵阶数：" << A.rows() << endl;
+	cout << "非零元数：" << A.nonZeros() << endl;
 	
 	/*cout << "A-------------------------" << endl << A << endl;
-	cout << "B-------------------------" << endl << B << endl;
-	system("pause");*/
+	cout << "B-------------------------" << endl << B << endl;*/
+	system("pause");
 
 	cout << "LOBPCG_I开始求解..." << endl;
+	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
 	LOBPCG_I LP1(A, B, 20, 40);
-	//LP1.compute();
+	LP1.compute();
 	
 	
 	///*cout << "原始GCG开始求解..." << endl;
@@ -69,8 +71,9 @@ int main() {
 	
 	
 	cout << "迭代Ritz开始求解..." << endl;
-	IterRitz iritz(A, B, 20, 10, 20, 3);
-	//iritz.compute();
+	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+	IterRitz iritz(A, B, 20, 20, 20, 3);
+	iritz.compute();
 	
 	
 	//cout << "JD开始求解..." << endl;
@@ -83,9 +86,9 @@ int main() {
 	//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
 	BJD bjd(A, B, 10, 100, 20, 5, 20);
 	//(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m)
-	bjd.compute();
+	//bjd.compute();
 
-	system("pause");
+	//system("pause");
 	system("cls");
 
 
@@ -95,6 +98,7 @@ int main() {
 		cout << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
 	}
 	cout << "LOBPCG_I迭代次数" << LP1.nIter << endl;
+	cout << "LOBPCG_I乘法次数" << LP1.com_of_mul << endl;
 
 
 	////for (int i = 0; i < gsv.eigenvalues.size(); ++i) {
@@ -115,10 +119,11 @@ int main() {
 
 	for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
 		cout << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << endl;
-		//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
+		//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
 		cout << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
 	}
 	cout << "IterRitz迭代次数" << iritz.nIter << endl;
+	cout << "IterRitz乘法次数" << iritz.com_of_mul << endl;
 
 
 	//for (int i = 0; i < jd.eigenvalues.size(); ++i) {
