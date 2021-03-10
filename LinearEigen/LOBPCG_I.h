@@ -6,6 +6,7 @@ using namespace Eigen;
 
 class LOBPCG_I : public LinearEigenSolver{
 public:
+	int cgstep;
 	double* storage = NULL;
 	Map<MatrixXd> X, P, W;
 	MatrixXd LAM;

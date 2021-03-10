@@ -12,7 +12,7 @@ public:
 	MatrixXd X;
 	MatrixXd X1;
 	MatrixXd LAM, V, P;
-	int q, r;
+	int q, r, cgstep;
 	IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r);
 	void compute();
 };

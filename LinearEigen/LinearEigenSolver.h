@@ -15,7 +15,9 @@ public:
 	static double ORTH_TOL;
 	static double EIGTOL;
 	static int CHECKNUM;
+	static fstream coutput;
 	int nIter;
+	long long com_of_mul;
 	SparseMatrix<double>& A;
 	SparseMatrix<double>& B;
 	int nev;
@@ -43,7 +45,7 @@ public:
 	int conv_select(Derived_val& eval, Derived_vec& evec, double shift, Out_val& valout, Out_vec& vecout);
 	
 	template<typename Derived_val, typename Derived_vec>
-	int conv_check(Derived_val& eval, Derived_vec& evec, double shift);
+	vector<int> conv_check(Derived_val& eval, Derived_vec& evec, double shift);
 	LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev);
 	virtual void compute() = 0;
 };
@@ -165,11 +167,10 @@ int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double 
 }
 
 template<typename Derived_val, typename Derived_vec>
-int LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, double shift) {
+vector<int> LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, double shift) {
 	MatrixXd tmp1, tmp2;
 	int flag = LinearEigenSolver::CHECKNUM;
 	vector<int> hitpos;
-	vector<int> goonpos;
 	vector<double> ans;
 	for (int i = 0; i < evec.cols(); ++i) {
 		tmp1 = A * evec.col(i);
@@ -182,7 +183,6 @@ int LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, double s
 		if ((ans[i] >= EIGTOL) || (prev + hitpos.size() >= nev)) {
 			cout << "检查第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
 			cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			goonpos.push_back(i);
 			--flag;
 			if (flag <= 0)
 				break;
@@ -194,7 +194,7 @@ int LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, double s
 			hitpos.push_back(i);
 		}
 	}
-	return hitpos.size();
+	return hitpos;
 }
 
 #endif

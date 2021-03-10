@@ -145,6 +145,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BJD.cpp" />
+    <ClCompile Include="BJD.h" />
     <ClCompile Include="IterRitz.cpp" />
     <ClCompile Include="JD.cpp" />
     <ClCompile Include="LOBPCG_I.cpp" />
