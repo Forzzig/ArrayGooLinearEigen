@@ -197,6 +197,8 @@ int main() {
 					if (A.rows() < batch * r)
 						break;
 					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+						if (A.rows() / cgstep < 2)
+							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
 						result << "迭代Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 						cout << "迭代Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
@@ -232,6 +234,8 @@ int main() {
 					if (A.rows() < batch * r)
 						break;
 					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+						if (A.rows() / cgstep < 2)
+							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
 						result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 						cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
