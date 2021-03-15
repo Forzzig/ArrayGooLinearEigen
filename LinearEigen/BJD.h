@@ -83,13 +83,14 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 		K1.insert(j, j) = 1;
 	tmpA = A;
 
-	//注意K逆的生成
-	/*if (i == 0) {
-			tmpA -= lam(0, 0) * B;
-		}
-		else {
-			tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
-		}*/
+	////TODO 注意K逆的生成
+	//if (i == 0) {
+	//		tmpA -= lam(0, 0) * B;
+	//	}
+	//	else {
+	//		tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
+	//	}
+
 	//先取预处理矩阵为对角阵
 	for (int j = 0; j < A.rows(); ++j)
 		K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
