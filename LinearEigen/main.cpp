@@ -211,7 +211,7 @@ int main() {
 							result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 						}
 						result << "迭代Ritz法迭代次数" << ritz.nIter << endl;
-						result << "迭代Ritz法乘法次数" << ritz.com_of_mul << endl;
+						result << "迭代Ritz法乘法次数" << ritz.com_of_mul << endl << endl;
 					}
 				}
 			}
@@ -248,7 +248,7 @@ int main() {
 							result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
 						}
 						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
-						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
+						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl << endl;
 					}
 				}
 			}
@@ -256,6 +256,8 @@ int main() {
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
 		result.close();
 		system("cls");
+
+		++n_matrices;
 		//system("pause");
 
 		///*cout << "原始GCG开始求解..." << endl;
