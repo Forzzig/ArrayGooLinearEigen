@@ -10,7 +10,7 @@ using namespace Eigen;
 class BJD : public LinearEigenSolver {
 public:
 	int restart, gmres_size;
-	MatrixXd V, WA, WB, HA, HB, HAB, H;
+	MatrixXd V, WA,/* WB, HA, HB, HAB,*/ H;
 	MatrixXd Y, v;
 	SparseMatrix<double> K1, tmpA;
 	int cgstep;

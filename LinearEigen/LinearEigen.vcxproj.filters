@@ -39,6 +39,12 @@
     <ClCompile Include="BJD.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="LOBPCG_II.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Ritz.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
@@ -57,6 +63,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="IterRitz.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LOBPCG_II.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Ritz.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

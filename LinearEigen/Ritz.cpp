@@ -1,6 +1,6 @@
-#include<IterRitz.h>
+#include<Ritz.h>
 
-IterRitz::IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) : LinearEigenSolver(A, B, nev){
+Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) : LinearEigenSolver(A, B, nev) {
 	this->q = q;
 	this->r = r;
 	this->cgstep = cgstep;
@@ -16,7 +16,7 @@ IterRitz::IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, in
 	cout << "初始化完成" << endl;
 }
 
-void IterRitz::compute() {
+void Ritz::compute() {
 	double shift = 0;
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
@@ -29,7 +29,7 @@ void IterRitz::compute() {
 		X1.resize(A.rows(), q * r);
 		for (int i = 0; i < r; ++i) {
 			if (i == 0) {
-				
+
 				tmp = B * X;
 				com_of_mul += B.nonZeros();
 
@@ -42,12 +42,12 @@ void IterRitz::compute() {
 				com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
 					cgstep * (A.nonZeros() + 7 * A.rows()));
 
-				tmp = X1.block(0, 0, A.rows(), q);
+				/*tmp = X1.block(0, 0, A.rows(), q);
 				rls = tmp.transpose() * A * tmp;
 				com_of_mul += q * (A.nonZeros() + A.rows());
 
 				for (int j = 0; j < q; ++j)
-					LAM(j, 0) = rls(j, j);
+					LAM(j, 0) = rls(j, j);*/
 
 				orthogonalization(X1.block(0, 0, A.rows(), q), eigenvectors, B);
 				com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
@@ -56,24 +56,18 @@ void IterRitz::compute() {
 				com_of_mul += (q + 1) * q * A.rows();
 			}
 			else {
-				/*tmp = B * X1.block(0, (i - 1) * q, A.rows(), q);
+				tmp = B * X1.block(0, (i - 1) * q, A.rows(), q);
+				com_of_mul += B.nonZeros() * q;
+				
 				for (int j = 0; j < q; ++j) {
 					tmp.col(j) *= LAM(j, 0);
 				}
+				com_of_mul += A.rows() * q;
+
 				X1.block(0, i * q, A.rows(), q) = linearsolver.solveWithGuess(tmp, X1.block(0, (i - 1) * q, A.rows(), q));
-				*/
-				rls = A * tmp;
-				com_of_mul += A.nonZeros() * tmp.cols();
-
-				for (int j = 0; j < q; ++j)
-					rls.col(j) -= B * tmp.col(j) * LAM(j, 0);
-				com_of_mul += q * (B.nonZeros() + A.rows());
-
-				X1.block(0, i * q, A.rows(), q) = linearsolver.solve(rls);
 				com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
 					cgstep * (A.nonZeros() + 7 * A.rows()));
 
-				tmp -= X1.block(0, i * q, A.rows(), q);
 			}
 			orthogonalization(X1.block(0, i * q, A.rows(), q), eigenvectors, B);
 			com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
@@ -84,7 +78,7 @@ void IterRitz::compute() {
 			orthogonalization(X1.block(0, i * q, A.rows(), q), B);
 			com_of_mul += (q + 1) * q * A.rows();
 		}
-		orthogonalization(P, X1, B);
+		/*orthogonalization(P, X1, B);
 		com_of_mul += P.cols() * X1.cols() * A.rows() * 2;
 
 		orthogonalization(P, eigenvectors, B);
@@ -94,7 +88,9 @@ void IterRitz::compute() {
 		com_of_mul += (P.cols() + 1) * P.cols() * A.rows();
 
 		V.resize(A.rows(), P.cols() + X1.cols());
-		V << X1, P;
+		V << X1, P;*/
+
+
 		/*if (cnv > 0) {
 			coutput << "eigenvectors---------------------------------------" << endl << eigenvectors << endl;
 			coutput << "X1---------------------------------------" << endl << X1 << endl;
@@ -102,24 +98,24 @@ void IterRitz::compute() {
 		}*/
 		//orthogonalization(V, eigenvectors, B);
 		//orthogonalization(V, B);
-		cout << V.cols() << endl;
-		projection_RR(V, A, eval, evec);
-		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
+		cout << X1.cols() << endl;
+		projection_RR(X1, A, eval, evec);
+		com_of_mul += X1.cols() * A.nonZeros() * X1.cols() + (24 * X1.cols() * X1.cols() * X1.cols());
 
-		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
+		cout << X1.rows() << " " << X1.cols() << " " << evec.rows() << " " << evec.cols() << endl;
 		/*orthogonalization(X1, eigenvectors, B);
 		orthogonalization(X1, B);
 		projection_RR(X1, A, eval, evec);
 
 		Xnew = X1 * evec;*/
-		
-		Xnew = V * evec;
-		com_of_mul += A.rows() * V.cols() * nev;
+
+		Xnew = X1 * evec;
+		com_of_mul += A.rows() * X1.cols() * nev;
 
 		//cout << Xnew << endl;
 		system("cls");
-		P = X;
-		
+		/*P = X;*/
+
 		cnv = conv_select(eval, Xnew, shift, LAM, X);
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		//system("pause");

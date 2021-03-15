@@ -67,14 +67,14 @@ void LOBPCG_I::compute() {
 		cout << V.cols() << endl;
 		
 		projection_RR(V, A, eval, evec);
-		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (V.cols() * V.cols() * V.cols());
+		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
 
 		system("cls");
 		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
 		
 		//子空间V投影下的新的近似特征向量
 		X = V * evec.block(0, 0, V.cols(), nev);
-		com_of_mul += A.rows() * V.cols() * V.cols();
+		com_of_mul += A.rows() * V.cols() * nev;
 		
 		//P是上一步的近似特征向量
 		new (&P) Map<MatrixXd>(storage + A.rows() * (W.cols() + X.cols()), A.rows(), nev);

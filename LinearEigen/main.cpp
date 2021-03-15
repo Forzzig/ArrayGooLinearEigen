@@ -3,9 +3,11 @@
 #include<mtxio.h>
 //#include<EigenResult.h>
 #include<LOBPCG_I.h>
+#include<LOBPCG_II.h>
 //#include<GCG_sv.h>
 //#include<LOBPCG_solver.h>
 #include<IterRitz.h>
+#include<Ritz.h>
 //#include<JD.h>
 #include<BJD.h>
 #include<ctime>
@@ -56,8 +58,13 @@ int main() {
 
 	cout << "LOBPCG_I开始求解..." << endl;
 	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-	LOBPCG_I LP1(A, B, 20, 40);
-	LP1.compute();
+	LOBPCG_I LP1(A, B, 10, 40);
+	//LP1.compute();
+
+	cout << "LOBPCG_II开始求解..." << endl;
+	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+	LOBPCG_II LP2(A, B, 20, 40);
+	//LP2.compute();
 	
 	
 	///*cout << "原始GCG开始求解..." << endl;
@@ -70,10 +77,15 @@ int main() {
 	//LOBPCG.compute();
 	
 	
-	cout << "迭代Ritz开始求解..." << endl;
+	cout << "改进迭代Ritz开始求解..." << endl;
 	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
 	IterRitz iritz(A, B, 20, 20, 20, 3);
-	iritz.compute();
+	//iritz.compute();
+
+	cout << "迭代Ritz开始求解..." << endl;
+	//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+	Ritz ritz(A, B, 20, 20, 20, 3);
+	ritz.compute();
 	
 	
 	//cout << "JD开始求解..." << endl;
@@ -101,6 +113,15 @@ int main() {
 	cout << "LOBPCG_I乘法次数" << LP1.com_of_mul << endl;
 
 
+	for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
+		cout << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << endl;
+		//cout << "第" << i + 1 << "个特征向量：" << LP2.eigenvectors.col(i).transpose() << endl;
+		cout << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
+	}
+	cout << "LOBPCG_II迭代次数" << LP2.nIter << endl;
+	cout << "LOBPCG_II乘法次数" << LP2.com_of_mul << endl;
+
+
 	////for (int i = 0; i < gsv.eigenvalues.size(); ++i) {
 	////	cout << "第" << i + 1 << "个特征值：" << gsv.eigenvalues[i] << endl;
 	////	//cout << "第" << i + 1 << "个特征向量：" << gcg.eigenvectors.col(i).transpose() << endl;
@@ -126,6 +147,15 @@ int main() {
 	cout << "IterRitz乘法次数" << iritz.com_of_mul << endl;
 
 
+	for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
+		cout << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << endl;
+		//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
+		cout << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
+	}
+	cout << "Ritz迭代次数" << ritz.nIter << endl;
+	cout << "Ritz乘法次数" << ritz.com_of_mul << endl;
+
+
 	//for (int i = 0; i < jd.eigenvalues.size(); ++i) {
 	//	cout << "第" << i + 1 << "个特征值：" << jd.eigenvalues[i] << endl;
 	//	//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
@@ -140,4 +170,5 @@ int main() {
 		cout << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
 	}
 	cout << "BJD迭代次数" << bjd.nIter << endl;
+	cout << "BJD乘法次数" << bjd.com_of_mul << endl;
 }
