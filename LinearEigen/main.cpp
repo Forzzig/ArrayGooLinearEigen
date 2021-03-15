@@ -94,6 +94,8 @@ int main() {
 			if (A.rows() / nev < 3)
 				break;
 			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+				if (A.rows() / cgstep < 2)
+					break;
 				//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
 				result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
 				cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
@@ -117,6 +119,8 @@ int main() {
 			if (A.rows() / nev < 3)
 				break;
 			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+				if (A.rows() / cgstep < 2)
+					break;
 				//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
 				result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
 				cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
@@ -128,8 +132,8 @@ int main() {
 					//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
 					result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
 				}
-				result << "LOBPCG_I迭代次数：" << LP2.nIter << endl;
-				result << "LOBPCG_I乘法次数：" << LP2.com_of_mul << endl << endl;
+				result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
+				result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
@@ -140,6 +144,8 @@ int main() {
 			for (int nev = 10; nev <= 50; nev += 10) {
 				if (nev < batch)
 					continue;
+				if (A.rows() / nev < 3)
+					break;
 				for (int restart = 5; restart <= 20; restart += 5) {
 					if (A.rows() < batch * restart)
 						break;
@@ -174,6 +180,8 @@ int main() {
 			for (int nev = 10; nev <= 50; nev += 10) {
 				if (nev < batch)
 					continue;
+				if (A.rows() / nev < 3)
+					break;
 				for (int r = 3; r <= 10; ++r) {
 					if (A.rows() < batch * r)
 						break;
@@ -203,6 +211,8 @@ int main() {
 			for (int nev = 10; nev <= 50; nev += 10) {
 				if (nev < batch)
 					continue;
+				if (A.rows() / nev < 3)
+					break;
 				for (int r = 3; r <= 10; ++r) {
 					if (A.rows() < batch * r)
 						break;
