@@ -154,7 +154,7 @@ int main() {
 				if (A.rows() / nev < 3)
 					break;
 				for (int restart = 5; restart <= 20; restart += 5) {
-					if (A.rows() < batch * restart)
+					if (A.rows() / (batch * restart) < 2)
 						break;
 					for (int gmres_size = 5; gmres_size <= 20; gmres_size += 5) {
 						for (int gmres_restart = 2; gmres_restart <= 10; gmres_restart += 2) {
@@ -194,7 +194,7 @@ int main() {
 				if (A.rows() / nev < 3)
 					break;
 				for (int r = 3; r <= 10; ++r) {
-					if (A.rows() < batch * r)
+					if (A.rows() / (batch * r) < 2)
 						break;
 					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
@@ -231,7 +231,7 @@ int main() {
 				if (A.rows() / nev < 3)
 					break;
 				for (int r = 3; r <= 10; ++r) {
-					if (A.rows() < batch * r)
+					if (A.rows() / (batch * r)< 2)
 						break;
 					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
