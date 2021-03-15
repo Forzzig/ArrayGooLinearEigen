@@ -75,7 +75,6 @@ int main() {
 		B.reserve(A.rows());
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
-		
 
 		/*cout << "A-------------------------" << endl << A << endl;
 		cout << "B-------------------------" << endl << B << endl;*/
@@ -92,6 +91,8 @@ int main() {
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
+			long long best = LLONG_MAX;
+			int best_step;
 			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
 				if (A.rows() / cgstep < 2)
 					break;
@@ -108,7 +109,12 @@ int main() {
 				}
 				result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
 				result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl << endl;
+				if (LP1.com_of_mul < best) {
+					best = LP1.com_of_mul;
+					best_step = cgstep;
+				}
 			}
+			result << "计算" << nev << "个特征向量最少需要" << best << "次乘法，cgstep设定为"<< best_step << endl << endl << endl;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
 		result.close();
@@ -121,6 +127,9 @@ int main() {
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
+			
+			long long best = LLONG_MAX;
+			int best_step;
 			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
 				if (A.rows() / cgstep < 2)
 					break;
@@ -137,7 +146,12 @@ int main() {
 				}
 				result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
 				result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl << endl;
+				if (LP2.com_of_mul < best) {
+					best = LP2.com_of_mul;
+					best_step = cgstep;
+				}
 			}
+			result << "计算" << nev << "个特征向量最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
 		result.close();
@@ -147,16 +161,21 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用块J-D....................." << endl;
 		result << matrixName + "，块J-D开始求解........................................." << endl;
-		for (int batch = 5; batch <= 20; batch += 5) {
-			for (int nev = 10; nev <= 50; nev += 10) {
-				if (nev < batch)
+		for (int nev = 10; nev <= 50; nev += 10) {
+			if (A.rows() / nev < 3)
+				break;
+			for (int batch = 5; batch <= 20; batch += 5) {
+				if (batch > nev)
 					continue;
-				if (A.rows() / nev < 3)
-					break;
+
+				long long best = LLONG_MAX;
+				int best_gmres_size, best_gmres_restart, best_restart;
 				for (int restart = 5; restart <= 20; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
 					for (int gmres_size = 5; gmres_size <= 20; gmres_size += 5) {
+						if (A.rows() / gmres_size < 2)
+							break;
 						for (int gmres_restart = 2; gmres_restart <= 10; gmres_restart += 2) {
 							//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
 							result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << 
@@ -174,8 +193,15 @@ int main() {
 							}
 							result << "块J-D迭代次数" << bjd.nIter << endl;
 							result << "块J-D乘法次数" << bjd.com_of_mul << endl << endl;
+							if (bjd.com_of_mul < best) {
+								best = bjd.com_of_mul;
+								best_gmres_size = gmres_size;
+								best_gmres_restart = gmres_restart;
+							}
 						}
 					}
+					result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best 
+						<< "次乘法\n设定迭代" << restart << "次重启，gmres设定扩展空间大小" << best_gmres_size << "总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
 				}
 			}
 		}
@@ -187,12 +213,15 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
-		for (int batch = 5; batch <= 20; batch += 5) {
-			for (int nev = 10; nev <= 50; nev += 10) {
-				if (nev < batch)
-					continue;
-				if (A.rows() / nev < 3)
+		for (int nev = 10; nev <= 50; nev += 10) {
+			if (A.rows() / nev < 3)
+				break;
+			for (int batch = 5; batch <= 20; batch += 5) {
+				if (batch > nev)
 					break;
+
+				long long best = LLONG_MAX;
+				int best_r, best_step;
 				for (int r = 3; r <= 10; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
@@ -212,8 +241,15 @@ int main() {
 						}
 						result << "迭代Ritz法迭代次数" << ritz.nIter << endl;
 						result << "迭代Ritz法乘法次数" << ritz.com_of_mul << endl << endl;
+						if (ritz.com_of_mul < best) {
+							best = ritz.com_of_mul;
+							best_r = r;
+							best_step = cgstep;
+						}
 					}
 				}
+				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
+					<< "次乘法\n设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
@@ -230,6 +266,9 @@ int main() {
 					continue;
 				if (A.rows() / nev < 3)
 					break;
+
+				long long best = LLONG_MAX;
+				int best_r, best_step;
 				for (int r = 3; r <= 10; ++r) {
 					if (A.rows() / (batch * r)< 2)
 						break;
@@ -249,8 +288,15 @@ int main() {
 						}
 						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
 						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl << endl;
+						if (iritz.com_of_mul < best) {
+							best = iritz.com_of_mul;
+							best_r = r;
+							best_step = cgstep;
+						}
 					}
 				}
+				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
+					<< "次乘法\n设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
