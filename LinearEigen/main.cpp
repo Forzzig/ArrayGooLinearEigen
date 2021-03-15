@@ -76,11 +76,6 @@ int main() {
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
 		
-		//开专用结果文件
-		result.open(matrixName + ".txt");
-		
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
 
 		/*cout << "A-------------------------" << endl << A << endl;
 		cout << "B-------------------------" << endl << B << endl;*/
@@ -89,6 +84,10 @@ int main() {
 		cout << "正在求解" << matrixName << "....................." << endl;
 
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
+		
+		result.open(matrixName + "-LOBPCG_I.txt");
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
@@ -112,7 +111,11 @@ int main() {
 			}
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
+		result.close();
 
+		result.open(matrixName + "-LOBPCG_II.txt");
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用LOBPCG_II....................." << endl;
 		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
@@ -137,7 +140,11 @@ int main() {
 			}
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
+		result.close();
 
+		result.open(matrixName + "-BJD.txt");
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用块J-D....................." << endl;
 		result << matrixName + "，块J-D开始求解........................................." << endl;
 		for (int batch = 5; batch <= 20; batch += 5) {
@@ -173,7 +180,11 @@ int main() {
 			}
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
+		result.close();
 
+		result.open(matrixName + "-Ritz.txt");
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
 		for (int batch = 5; batch <= 20; batch += 5) {
@@ -197,14 +208,18 @@ int main() {
 							//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
 							result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 						}
-						result << "Ritz法迭代次数" << ritz.nIter << endl;
-						result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
+						result << "迭代Ritz法迭代次数" << ritz.nIter << endl;
+						result << "迭代Ritz法乘法次数" << ritz.com_of_mul << endl;
 					}
 				}
 			}
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
+		result.close();
 
+		result.open(matrixName + "-iRitz.txt");
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
 		for (int batch = 5; batch <= 20; batch += 5) {
@@ -235,6 +250,7 @@ int main() {
 			}
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
+		result.close();
 		system("cls");
 		//system("pause");
 
@@ -245,10 +261,6 @@ int main() {
 		//cout << "LOBPCG开始求解..." << endl;
 		//LOBPCG_solver LOBPCG(A, B, 20, 40);
 		//LOBPCG.compute();
-
-		
-		
-
 
 		//cout << "JD开始求解..." << endl;
 		////(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size)
@@ -272,11 +284,6 @@ int main() {
 		//}
 		//cout << "LOBPCG迭代次数" << LOBPCG.nIter << endl;
 
-
-		
-
-
-		
 
 
 		//for (int i = 0; i < jd.eigenvalues.size(); ++i) {
