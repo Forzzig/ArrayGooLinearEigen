@@ -13,6 +13,7 @@
 //#include<JD.h>
 #include<BJD.h>
 #include<ctime>
+#include<chrono>
 #include<cstdlib>
 #include<iomanip>
 #include<fstream>
@@ -21,7 +22,7 @@
 using namespace std;
 using namespace Eigen;
 
-ofstream output;
+fstream output;
 
 #define mLOBPCG_I
 #define mLOBPCG_II
@@ -53,7 +54,7 @@ string matrices[1000] =
 
 int main() {
 
-	ofstream result;
+	fstream result;
 	int n_matrices = 0;
 	while (matrices[n_matrices].length() != 0) {
 
@@ -85,12 +86,19 @@ int main() {
 
 #ifdef mLOBPCG_I
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
+		result.open("./result/" + matrixName + "-LOBPCG_I.txt", ios::out | ios::app);
 		
-		result.open("./result/" + matrixName + "-LOBPCG_I.txt");
+		time_t current = time(&current);
+		char buff[26];
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+		
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt");
+		
+		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt", ios::out | ios::app);
+		output << buff;
 		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
@@ -131,12 +139,19 @@ int main() {
 #endif
 
 #ifdef mLOBPCG_II
-		result.open("./result/" + matrixName + "-LOBPCG_II.txt");
+		result.open("./result/" + matrixName + "-LOBPCG_II.txt", ios::out | ios::app);
+
+		time_t current = time(&current);
+		char buff[26];
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用LOBPCG_II....................." << endl;
 		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt");
+		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt", ios::out | ios::app);
+		output << buff;
 		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
@@ -176,12 +191,19 @@ int main() {
 		output.close();
 #endif
 #ifdef mBJD
-		result.open("./result/" + matrixName + "-BJD.txt");
+		result.open("./result/" + matrixName + "-BJD.txt", ios::out | ios::app);
+
+		time_t current = time(&current);
+		char buff[26];
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用块J-D....................." << endl;
 		result << matrixName + "，块J-D开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-BJD-statistics.txt");
+		output.open("./result/" + matrixName + "-BJD-statistics.txt", ios::out | ios::app);
+		output << buff;
 		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
 		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
@@ -235,12 +257,19 @@ int main() {
 		output.close();
 #endif
 #ifdef mRitz
-		result.open("./result/" + matrixName + "-Ritz.txt");
+		result.open("./result/" + matrixName + "-Ritz.txt", ios::out | ios::app);
+
+		time_t current = time(&current);
+		char buff[26];
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-Ritz-statistics.txt");
+		output.open("./result/" + matrixName + "-Ritz-statistics.txt", ios::out | ios::app);
+		output << buff;
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
@@ -287,12 +316,19 @@ int main() {
 		output.close();
 #endif
 #ifdef miRitz
-		result.open("./result/" + matrixName + "-iRitz.txt");
+		result.open("./result/" + matrixName + "-iRitz.txt", ios::out | ios::app);
+
+		time_t current = time(&current);
+		char buff[26];
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-IterRitz-statistics.txt");
+		output.open("./result/" + matrixName + "-IterRitz-statistics.txt", ios::out | ios::app);
+		output << buff;
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 5; nev <= 20; nev += 5) {
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -341,6 +377,8 @@ int main() {
 		
 		system("cls");
 		++n_matrices;
+
+
 		//system("pause");
 
 		///*cout << "原始GCG开始求解..." << endl;
