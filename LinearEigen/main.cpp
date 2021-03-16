@@ -220,9 +220,9 @@ int main() {
 							}
 						}
 					}
-					result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best 
-						<< "次乘法\n设定为迭代" << best_restart << "次重启，gmres设定扩展空间大小" << best_gmres_size << "总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
 				}
+				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
+					<< "次乘法\n设定为迭代" << best_restart << "次重启，gmres设定扩展空间大小" << best_gmres_size << "总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
