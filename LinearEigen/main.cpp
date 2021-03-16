@@ -21,7 +21,7 @@
 using namespace std;
 using namespace Eigen;
 
-ofstream output("coutput.txt");
+ofstream output;
 
 #define mLOBPCG_I
 #define mLOBPCG_II
@@ -50,13 +50,6 @@ string matrices[1000] =
 	"s3rmt3m3",
 	"1138_bus"
 };
-
-void RR(Block<Map<MatrixXd>>& V) {
-	V.col(0)[0] = 1000;
-}
-void RR(Block<MatrixXd>& V) {
-	V.col(0)[0] = 2000;
-}
 
 int main() {
 
@@ -97,6 +90,8 @@ int main() {
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
+		output.open(matrixName + "-LOBPCG-I-statistics.txt");
+		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
@@ -125,12 +120,14 @@ int main() {
 						best = LP1.com_of_mul;
 						best_step = cgstep;
 					}
+					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << endl;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
 		result.close();
+		output.close();
 #endif
 
 #ifdef mLOBPCG_II
@@ -139,6 +136,8 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用LOBPCG_II....................." << endl;
 		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
+		output.open(matrixName + "-LOBPCG-II-statistics.txt");
+		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
@@ -167,12 +166,14 @@ int main() {
 						best = LP2.com_of_mul;
 						best_step = cgstep;
 					}
+					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << endl;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 			}
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
 		result.close();
+		output.close();
 #endif
 #ifdef mBJD
 		result.open(matrixName + "-BJD.txt");
@@ -180,6 +181,8 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用块J-D....................." << endl;
 		result << matrixName + "，块J-D开始求解........................................." << endl;
+		output.open(matrixName + "-BJD-statistics.txt");
+		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
@@ -192,10 +195,10 @@ int main() {
 				for (int restart = 5; restart <= 20; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
-					for (int gmres_size = 5; gmres_size <= 20; gmres_size += 5) {
+					for (int gmres_size = 5; gmres_size <= 15; gmres_size += 5) {
 						if (A.rows() / gmres_size < 2)
 							break;
-						for (int gmres_restart = 2; gmres_restart <= 10; gmres_restart += 2) {
+						for (int gmres_restart = 1; gmres_restart <= 3; ++gmres_restart) {
 							//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
 							result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << 
 								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
@@ -218,6 +221,8 @@ int main() {
 								best_gmres_restart = gmres_restart;
 								best_restart = restart;
 							}
+							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
+								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.com_of_mul << endl;
 						}
 					}
 				}
@@ -227,6 +232,7 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
 		result.close();
+		output.close();
 #endif
 #ifdef mRitz
 		result.open(matrixName + "-Ritz.txt");
@@ -234,6 +240,8 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
+		output.open(matrixName + "-Ritz-statistics.txt");
+		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
@@ -267,6 +275,7 @@ int main() {
 							best_r = r;
 							best_step = cgstep;
 						}
+						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << endl;
 					}
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
@@ -275,6 +284,7 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
 		result.close();
+		output.close();
 #endif
 #ifdef miRitz
 		result.open(matrixName + "-iRitz.txt");
@@ -282,6 +292,8 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
+		output.open(matrixName + "-IterRitz-statistics.txt");
+		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			for (int batch = 5; batch <= 20; batch += 5) {
 				if (nev < batch)
@@ -315,6 +327,7 @@ int main() {
 							best_r = r;
 							best_step = cgstep;
 						}
+						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
 					}
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
@@ -323,6 +336,7 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
 		result.close();
+		output.close();
 #endif
 		
 		system("cls");
