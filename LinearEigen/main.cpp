@@ -5,6 +5,7 @@
 #include<LOBPCG_I.h>
 #include<LOBPCG_I_Batch.h>
 #include<LOBPCG_II.h>
+#include<LOBPCG_II_Batch.h>
 //#include<GCG_sv.h>
 //#include<LOBPCG_solver.h>
 #include<IterRitz.h>
@@ -81,11 +82,6 @@ int main() {
 		cout << "B-------------------------" << endl << B << endl;*/
 		//system("pause");
 
-		cout << "LOBPCG_I执行参数：" << endl << "特征值：" << 10 << "个，最大CG迭代步：" << 10 << "次，batch大小" << 5 << endl;
-		LOBPCG_I_Batch LP1(A, B, 10, 10, 5);
-		LP1.compute();
-		system("pause");
-
 		cout << "正在求解" << matrixName << "....................." << endl;
 
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
@@ -137,31 +133,32 @@ int main() {
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
-			
-			long long best = LLONG_MAX;
-			int best_step;
-			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
-				if (A.rows() / cgstep < 2)
-					break;
-				//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-				result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-				cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-				LOBPCG_II LP2(A, B, nev, cgstep);
-				LP2.compute();
+			for (int batch = 5; batch <= 20; batch += 5) {
+				long long best = LLONG_MAX;
+				int best_step;
+				for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+					if (A.rows() / cgstep < 2)
+						break;
+					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+					result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
+					cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
+					LOBPCG_II_Batch LP2(A, B, nev, cgstep);
+					LP2.compute();
 
-				for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
-					result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
-					//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-					result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
+					for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
+						result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
+						//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
+						result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
+					}
+					result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
+					result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl << endl;
+					if (LP2.com_of_mul < best) {
+						best = LP2.com_of_mul;
+						best_step = cgstep;
+					}
 				}
-				result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
-				result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl << endl;
-				if (LP2.com_of_mul < best) {
-					best = LP2.com_of_mul;
-					best_step = cgstep;
-				}
+				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 			}
-			result << "计算" << nev << "个特征向量最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
 		result.close();
@@ -207,11 +204,12 @@ int main() {
 								best = bjd.com_of_mul;
 								best_gmres_size = gmres_size;
 								best_gmres_restart = gmres_restart;
+								best_restart = restart;
 							}
 						}
 					}
 					result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best 
-						<< "次乘法\n设定迭代" << restart << "次重启，gmres设定扩展空间大小" << best_gmres_size << "总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
+						<< "次乘法\n设定为迭代" << best_restart << "次重启，gmres设定扩展空间大小" << best_gmres_size << "总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
 				}
 			}
 		}

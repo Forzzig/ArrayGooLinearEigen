@@ -152,6 +152,7 @@
     <ClCompile Include="LOBPCG_I.cpp" />
     <ClCompile Include="LinearEigenSolver.cpp" />
     <ClCompile Include="LOBPCG_II.cpp" />
+    <ClCompile Include="LOBPCG_II_Batch.cpp" />
     <ClCompile Include="LOBPCG_I_Batch.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mtxio.cpp" />
@@ -166,6 +167,7 @@
     <ClInclude Include="LOBPCG_I.h" />
     <ClInclude Include="LinearEigenSolver.h" />
     <ClInclude Include="LOBPCG_II.h" />
+    <ClInclude Include="LOBPCG_II_Batch.h" />
     <ClInclude Include="LOBPCG_I_Batch.h" />
     <ClInclude Include="mtxio.h" />
     <ClInclude Include="Ritz.h" />
