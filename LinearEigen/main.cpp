@@ -142,7 +142,7 @@ int main() {
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
 					result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
 					cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-					LOBPCG_II_Batch LP2(A, B, nev, cgstep);
+					LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
 					LP2.compute();
 
 					for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
