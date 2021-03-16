@@ -3,6 +3,7 @@
 #include<mtxio.h>
 //#include<EigenResult.h>
 #include<LOBPCG_I.h>
+#include<LOBPCG_I_Batch.h>
 #include<LOBPCG_II.h>
 //#include<GCG_sv.h>
 //#include<LOBPCG_solver.h>
@@ -80,6 +81,11 @@ int main() {
 		cout << "B-------------------------" << endl << B << endl;*/
 		//system("pause");
 
+		cout << "LOBPCG_I执行参数：" << endl << "特征值：" << 10 << "个，最大CG迭代步：" << 10 << "次，batch大小" << 5 << endl;
+		LOBPCG_I_Batch LP1(A, B, 10, 10, 5);
+		LP1.compute();
+		system("pause");
+
 		cout << "正在求解" << matrixName << "....................." << endl;
 
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
@@ -91,30 +97,34 @@ int main() {
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
 				break;
-			long long best = LLONG_MAX;
-			int best_step;
-			for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
-				if (A.rows() / cgstep < 2)
+			for (int batch = 5; batch <= 20; batch += 5) {
+				if (batch > nev)
 					break;
-				//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-				result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-				cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-				LOBPCG_I LP1(A, B, nev, cgstep);
-				LP1.compute();
+				long long best = LLONG_MAX;
+				int best_step;
+				for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+					if (A.rows() / cgstep < 2)
+						break;
+					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+					result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+					cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+					LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
+					LP1.compute();
 
-				for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
-					result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
-					//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-					result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
+					for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
+						result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
+						//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
+						result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
+					}
+					result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
+					result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl << endl;
+					if (LP1.com_of_mul < best) {
+						best = LP1.com_of_mul;
+						best_step = cgstep;
+					}
 				}
-				result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
-				result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl << endl;
-				if (LP1.com_of_mul < best) {
-					best = LP1.com_of_mul;
-					best_step = cgstep;
-				}
+				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 			}
-			result << "计算" << nev << "个特征向量最少需要" << best << "次乘法，cgstep设定为"<< best_step << endl << endl << endl;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
 		result.close();
@@ -166,7 +176,7 @@ int main() {
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
 				if (batch > nev)
-					continue;
+					break;
 
 				long long best = LLONG_MAX;
 				int best_gmres_size, best_gmres_restart, best_restart;
@@ -260,10 +270,10 @@ int main() {
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
-		for (int batch = 5; batch <= 20; batch += 5) {
-			for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 10; nev <= 50; nev += 10) {
+			for (int batch = 5; batch <= 20; batch += 5) {
 				if (nev < batch)
-					continue;
+					break;
 				if (A.rows() / nev < 3)
 					break;
 
