@@ -1,4 +1,5 @@
 #include<BJD.h>
+#include<ctime>
 
 BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size) : LinearEigenSolver(A, B, nev) {
 	this->restart = restart;
@@ -28,39 +29,45 @@ BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, 
 }
 
 void BJD::compute() {
-	MatrixXd eval, evec;
+	MatrixXd eval, evec, ui, ri;
 	Map<MatrixXd> Vj(&V(0, 0), A.rows(), batch);
 	Map<MatrixXd> WAj(&WA(0, 0), A.rows(), batch);
 	/*Map<MatrixXd> WBj(&WB(0, 0), A.rows(), batch);*/
 
 	MatrixXd tmpeval(batch, 1), tmpevec(A.rows(), batch);
 	int nd = batch;
+	/*long long t1, t2;
+	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
 		++nIter;
 		int prev = eigenvalues.size();
 		for (int i = 1; i <= restart; ++i) {
+			
 			system("cls");
 			cout << "第" << nIter - 1 << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
-			eval.resize(Vj.cols(), 1);
-			evec.resize(Vj.cols(), Vj.cols());
 			cout << Vj.cols() << endl;
-			
+
+			//t1 = clock();
+
 			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), HAB.block(0, 0, Vj.cols(), Vj.cols()), 0, eval, evec);
 			RR(H.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
 			com_of_mul += 4 * Vj.cols() * Vj.cols() * Vj.cols();
+			
+			//t2 = clock();
+			//tRR += t2 - t1;
 
 			//注意eval长度是偏长的
-			MatrixXd ui = Vj * evec;
+			ui = Vj * evec.leftCols(nd);
 			com_of_mul += A.rows() * Vj.cols() * evec.cols();
 
-			MatrixXd ri = MatrixXd::Zero(ui.rows(), nd);
+			ri = B * ui;
 			for (int j = 0; j < ri.cols(); ++j) {
-				ri.col(j) += B * ui.col(j) * eval(j, 0);
+				ri.col(j) *= eval(j, 0);
 			}
-			com_of_mul += ri.cols() * (B.nonZeros() + A.rows());
+			com_of_mul += ui.cols() * (B.nonZeros() + A.rows());
 
-			ri -= A * ui.leftCols(nd);
+			ri -= A * ui;
 			com_of_mul += A.nonZeros() * ui.cols();
 			
 			/*coutput << "V--------------------------------" << endl << Vj << endl;
@@ -74,9 +81,12 @@ void BJD::compute() {
 			coutput << "evec--------------------------------" << endl << evec << endl;
 			coutput << "ui--------------------------------" << endl << ui << endl;*/
 
-			int cnv = conv_select(eval, ui.leftCols(nd), 0, tmpeval, tmpevec);
+			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
 			com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
-			/*system("pause");*/
+
+			//t1 = clock();
+			//tCnv += t1 - t2;
+
 			if (cnv > prev)
 				break;
 			if (i == restart)
@@ -96,6 +106,9 @@ void BJD::compute() {
 											+ A.rows() + ui.cols())
 							+ cgstep * (A.rows() + ui.cols()));
 
+			//t2 = clock();
+			//tGMR += t2 - t1;
+
 			//cout << X << endl << endl;
 			orthogonalization(X, eigenvectors, B);
 			com_of_mul += X.cols() * eigenvectors.cols() * A.rows() * 2;
@@ -110,12 +123,17 @@ void BJD::compute() {
 			com_of_mul += (X.cols() + 1) * X.cols() * A.rows();
 
 			//cout << X << endl << endl;
+			//t1 = clock();
+			//tOrt += t1 - t2;
 
 			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols() - dep);
 			/*cout << X << endl<< endl;*/
 			Map<MatrixXd> tmpWA(&WA(0, Vj.cols()), A.rows(), X.cols());
 			tmpWA = A * X;
 			com_of_mul += A.nonZeros() * X.cols();
+
+			//t2 = clock();
+			//tAX += t2 - t1;
 
 			/*Map<MatrixXd> tmpWB(&WB(0, Vj.cols()), A.rows(), X.cols());
 			tmpWB = B * X;*/
@@ -135,6 +153,9 @@ void BJD::compute() {
 			H.block(0, Vj.cols(), Vj.cols(), X.cols()) = H.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
 			H.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * X;
 			com_of_mul += X.cols() * A.rows() * Vj.cols() + X.cols() * A.rows() * X.cols();
+
+			//t1 = clock();
+			//tH += t1 - t2;
 
 			new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), Vj.cols() + X.cols());
 			new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), WAj.cols() + X.cols());
@@ -170,4 +191,7 @@ void BJD::compute() {
 		H.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * Vj;
 		com_of_mul += Vj.cols() * A.rows() * Vj.cols();
 	}
+	/*cout << "RR   , Cnv   , GMR   , Ort   , AX   , H" << endl;
+	cout << tRR << ", " << tCnv << ", " << tGMR << ", " << tOrt << ", " << tAX << ", " << tH << endl;
+	system("pause");*/
 }

@@ -189,9 +189,9 @@ int main() {
 			for (int batch = 5; batch <= 20; batch += 5) {
 				if (batch > nev)
 					break;
-
 				long long best = LLONG_MAX;
 				int best_gmres_size, best_gmres_restart, best_restart;
+
 				for (int restart = 5; restart <= 20; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
