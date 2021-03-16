@@ -51,17 +51,16 @@ void BJD::compute() {
 			com_of_mul += 4 * Vj.cols() * Vj.cols() * Vj.cols();
 
 			//注意eval长度是偏长的
-			//TODO ui到底取多少个，需要实验
-			MatrixXd ui = Vj * evec.block(0, 0, Vj.cols(), nd);
-			com_of_mul += A.rows() * Vj.cols() * nd;
+			MatrixXd ui = Vj * evec;
+			com_of_mul += A.rows() * Vj.cols() * evec.cols();
 
-			MatrixXd ri = MatrixXd::Zero(ui.rows(), ui.cols());
+			MatrixXd ri = MatrixXd::Zero(ui.rows(), nd);
 			for (int j = 0; j < ri.cols(); ++j) {
 				ri.col(j) += B * ui.col(j) * eval(j, 0);
 			}
 			com_of_mul += ri.cols() * (B.nonZeros() + A.rows());
 
-			ri -= A * ui;
+			ri -= A * ui.leftCols(nd);
 			com_of_mul += A.nonZeros() * ui.cols();
 			
 			/*coutput << "V--------------------------------" << endl << Vj << endl;
@@ -75,7 +74,7 @@ void BJD::compute() {
 			coutput << "evec--------------------------------" << endl << evec << endl;
 			coutput << "ui--------------------------------" << endl << ui << endl;*/
 
-			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
+			int cnv = conv_select(eval, ui.leftCols(nd), 0, tmpeval, tmpevec);
 			com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 			/*system("pause");*/
 			if (cnv > prev)

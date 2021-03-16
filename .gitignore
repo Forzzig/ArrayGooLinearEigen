@@ -341,3 +341,4 @@ healthchecksdb
 /LinearEigen/Eigen/out/build/x64-Debug (默认值)/CMakeFiles/3.18.20081302-MSVC_2
 /LinearEigen/Eigen/out/build/x64-Debug (默认值)/CMakeFiles/ShowIncludes
 /LinearEigen/*.txt
+/LinearEigen/result/*.txt

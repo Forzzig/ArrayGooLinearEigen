@@ -92,7 +92,7 @@ int main() {
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
 		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt");
 		output << "nev, batch, cgstep, iter, multi" << endl;
-		for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -138,7 +138,7 @@ int main() {
 		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
 		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt");
 		output << "nev, batch, cgstep, iter, multi" << endl;
-		for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -183,7 +183,7 @@ int main() {
 		result << matrixName + "，块J-D开始求解........................................." << endl;
 		output.open("./result/" + matrixName + "-BJD-statistics.txt");
 		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
-		for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -242,7 +242,7 @@ int main() {
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
 		output.open("./result/" + matrixName + "-Ritz-statistics.txt");
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
-		for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 5; nev <= 20; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -294,7 +294,7 @@ int main() {
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
 		output.open("./result/" + matrixName + "-IterRitz-statistics.txt");
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
-		for (int nev = 10; nev <= 50; nev += 10) {
+		for (int nev = 5; nev <= 20; nev += 5) {
 			for (int batch = 5; batch <= 20; batch += 5) {
 				if (nev < batch)
 					break;
