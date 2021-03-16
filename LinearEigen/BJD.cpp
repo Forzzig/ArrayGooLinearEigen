@@ -33,11 +33,12 @@ void BJD::compute() {
 	Map<MatrixXd> WAj(&WA(0, 0), A.rows(), batch);
 	/*Map<MatrixXd> WBj(&WB(0, 0), A.rows(), batch);*/
 
+	MatrixXd tmpeval(batch, 1), tmpevec(A.rows(), batch);
+	int nd = batch;
 	while (true) {
 		++nIter;
-		int i;
-		MatrixXd tmpeval, tmpevec;
-		for (i = 1; i <= restart; ++i) {
+		int prev = eigenvalues.size();
+		for (int i = 1; i <= restart; ++i) {
 			system("cls");
 			cout << "第" << nIter - 1 << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
@@ -50,8 +51,9 @@ void BJD::compute() {
 			com_of_mul += 4 * Vj.cols() * Vj.cols() * Vj.cols();
 
 			//注意eval长度是偏长的
-			MatrixXd ui = Vj * evec.block(0, 0, Vj.cols(), batch);
-			com_of_mul += A.rows() * Vj.cols() * Vj.cols();
+			//TODO ui到底取多少个，需要实验
+			MatrixXd ui = Vj * evec.block(0, 0, Vj.cols(), nd);
+			com_of_mul += A.rows() * Vj.cols() * nd;
 
 			MatrixXd ri = MatrixXd::Zero(ui.rows(), ui.cols());
 			for (int j = 0; j < ri.cols(); ++j) {
@@ -61,11 +63,6 @@ void BJD::compute() {
 
 			ri -= A * ui;
 			com_of_mul += A.nonZeros() * ui.cols();
-
-			int prev = eigenvalues.size();
-			tmpeval.resize(batch, 1);
-			tmpevec.resize(A.rows(), batch);
-
 			
 			/*coutput << "V--------------------------------" << endl << Vj << endl;
 			coutput << "WA--------------------------------" << endl << WAj << endl;
@@ -77,7 +74,6 @@ void BJD::compute() {
 			coutput << "eval--------------------------------" << endl << eval << endl;
 			coutput << "evec--------------------------------" << endl << evec << endl;
 			coutput << "ui--------------------------------" << endl << ui << endl;*/
-
 
 			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
 			com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
@@ -152,8 +148,12 @@ void BJD::compute() {
 		}
 		if (eigenvalues.size() >= nev)
 			break;
-		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), batch);
-		Vj = tmpevec.block(0, 0, A.rows(), batch);
+		
+		int left = nd - (eigenvalues.size() - prev);
+		nd = batch < nev - eigenvalues.size() ? batch : nev - eigenvalues.size();
+		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);
+		Vj.leftCols(left) = tmpevec.leftCols(left);
+		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);
 		if (eigenvalues.size() > 0)
 			orthogonalization(Vj, Map<MatrixXd>(&eigenvectors(0, 0), A.rows(), eigenvalues.size()), B);
 		orthogonalization(Vj, B);

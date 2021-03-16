@@ -23,15 +23,15 @@ using namespace Eigen;
 
 ofstream output;
 
-#define mLOBPCG_I
-#define mLOBPCG_II
+//#define mLOBPCG_I
+//#define mLOBPCG_II
 #define mBJD
-#define mRitz
-#define miRitz
+//#define mRitz
+//#define miRitz
 
 //¸÷ÖÖ¾ØÕó
 string matrices[1000] =
-{ "bcsstk01",
+{ "bcsstk01"/*,
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
@@ -48,7 +48,7 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus"
+	"1138_bus"*/
 };
 
 int main() {
