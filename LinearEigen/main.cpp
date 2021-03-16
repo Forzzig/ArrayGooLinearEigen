@@ -23,15 +23,15 @@ using namespace Eigen;
 
 ofstream output;
 
-//#define mLOBPCG_I
-//#define mLOBPCG_II
+#define mLOBPCG_I
+#define mLOBPCG_II
 #define mBJD
-//#define mRitz
-//#define miRitz
+#define mRitz
+#define miRitz
 
 //各种矩阵
 string matrices[1000] =
-{ "bcsstk01"/*,
+{ "bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
@@ -48,7 +48,7 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus"*/
+	"1138_bus"
 };
 
 int main() {
@@ -86,11 +86,11 @@ int main() {
 #ifdef mLOBPCG_I
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
 		
-		result.open(matrixName + "-LOBPCG_I.txt");
+		result.open("./result/" + matrixName + "-LOBPCG_I.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
-		output.open(matrixName + "-LOBPCG-I-statistics.txt");
+		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt");
 		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
@@ -131,12 +131,12 @@ int main() {
 #endif
 
 #ifdef mLOBPCG_II
-		result.open(matrixName + "-LOBPCG_II.txt");
+		result.open("./result/" + matrixName + "-LOBPCG_II.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用LOBPCG_II....................." << endl;
 		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
-		output.open(matrixName + "-LOBPCG-II-statistics.txt");
+		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt");
 		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
@@ -176,12 +176,12 @@ int main() {
 		output.close();
 #endif
 #ifdef mBJD
-		result.open(matrixName + "-BJD.txt");
+		result.open("./result/" + matrixName + "-BJD.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用块J-D....................." << endl;
 		result << matrixName + "，块J-D开始求解........................................." << endl;
-		output.open(matrixName + "-BJD-statistics.txt");
+		output.open("./result/" + matrixName + "-BJD-statistics.txt");
 		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
@@ -235,12 +235,12 @@ int main() {
 		output.close();
 #endif
 #ifdef mRitz
-		result.open(matrixName + "-Ritz.txt");
+		result.open("./result/" + matrixName + "-Ritz.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
 		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
-		output.open(matrixName + "-Ritz-statistics.txt");
+		output.open("./result/" + matrixName + "-Ritz-statistics.txt");
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			if (A.rows() / nev < 3)
@@ -287,12 +287,12 @@ int main() {
 		output.close();
 #endif
 #ifdef miRitz
-		result.open(matrixName + "-iRitz.txt");
+		result.open("./result/" + matrixName + "-iRitz.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
 		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
-		output.open(matrixName + "-IterRitz-statistics.txt");
+		output.open("./result/" + matrixName + "-IterRitz-statistics.txt");
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = 10; nev <= 50; nev += 10) {
 			for (int batch = 5; batch <= 20; batch += 5) {
@@ -357,7 +357,6 @@ int main() {
 		///*jd.compute();*/
 
 
-		
 		////for (int i = 0; i < gsv.eigenvalues.size(); ++i) {
 		////	cout << "第" << i + 1 << "个特征值：" << gsv.eigenvalues[i] << endl;
 		////	//cout << "第" << i + 1 << "个特征向量：" << gcg.eigenvectors.col(i).transpose() << endl;
@@ -372,7 +371,6 @@ int main() {
 		//	cout << (A * LOBPCG.eigenvectors.col(i) - LOBPCG.eigenvalues[i] * B * LOBPCG.eigenvectors.col(i)).norm() / (A * LOBPCG.eigenvectors.col(i)).norm() << endl;
 		//}
 		//cout << "LOBPCG迭代次数" << LOBPCG.nIter << endl;
-
 
 
 		//for (int i = 0; i < jd.eigenvalues.size(); ++i) {
