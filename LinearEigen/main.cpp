@@ -23,6 +23,34 @@ using namespace Eigen;
 
 ofstream output("coutput.txt");
 
+#define mLOBPCG_I
+#define mLOBPCG_II
+#define mBJD
+#define mRitz
+#define miRitz
+
+//各种矩阵
+string matrices[1000] =
+{ "bcsstk01",
+	"bcsstk02",
+	"bcsstk05",
+	"bcsstk07",
+	"bcsstk08",
+	"bcsstk09",
+	"bcsstk10",
+	"bcsstk12",
+	"bcsstk13",
+	"bcsstk15",
+	"bcsstk16",
+	"bcsstk17",
+	"bcsstk18",
+	"bcsstk19",
+	"bwm2000",
+	"fidapm29",
+	"s3rmt3m3",
+	"1138_bus"
+};
+
 void RR(Block<Map<MatrixXd>>& V) {
 	V.col(0)[0] = 1000;
 }
@@ -31,28 +59,6 @@ void RR(Block<MatrixXd>& V) {
 }
 
 int main() {
-
-	//各种矩阵
-	string matrices[1000] =
-	{	"bcsstk01",
-		"bcsstk02",
-		"bcsstk05", 
-		"bcsstk07",
-		"bcsstk08",
-		"bcsstk09",
-		"bcsstk10",
-		"bcsstk12",
-		"bcsstk13",
-		"bcsstk15",
-		"bcsstk16",
-		"bcsstk17",
-		"bcsstk18",
-		"bcsstk19",
-		"bwm2000",
-		"fidapm29",
-		"s3rmt3m3",
-		"1138_bus"
-	};
 
 	ofstream result;
 	int n_matrices = 0;
@@ -84,6 +90,7 @@ int main() {
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
+#ifdef mLOBPCG_I
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
 		
 		result.open(matrixName + "-LOBPCG_I.txt");
@@ -124,7 +131,9 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
 		result.close();
+#endif
 
+#ifdef mLOBPCG_II
 		result.open(matrixName + "-LOBPCG_II.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
@@ -134,14 +143,16 @@ int main() {
 			if (A.rows() / nev < 3)
 				break;
 			for (int batch = 5; batch <= 20; batch += 5) {
+				if (batch > nev)
+					break;
 				long long best = LLONG_MAX;
 				int best_step;
 				for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-					result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
-					cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，最大CG迭代步：" << cgstep << "次" << endl;
+					result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+					cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 					LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
 					LP2.compute();
 
@@ -162,7 +173,8 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
 		result.close();
-
+#endif
+#ifdef mBJD
 		result.open(matrixName + "-BJD.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
@@ -215,7 +227,8 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
 		result.close();
-
+#endif
+#ifdef mRitz
 		result.open(matrixName + "-Ritz.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
@@ -262,7 +275,8 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
 		result.close();
-
+#endif
+#ifdef miRitz
 		result.open(matrixName + "-iRitz.txt");
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
@@ -309,8 +323,9 @@ int main() {
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
 		result.close();
+#endif
+		
 		system("cls");
-
 		++n_matrices;
 		//system("pause");
 
