@@ -100,7 +100,7 @@ int main() {
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+				for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -146,7 +146,7 @@ int main() {
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+				for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -251,10 +251,10 @@ int main() {
 
 				long long best = LLONG_MAX;
 				int best_r, best_step;
-				for (int r = 3; r <= 10; ++r) {
+				for (int r = 2; r <= 5; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
-					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+					for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
@@ -303,10 +303,10 @@ int main() {
 
 				long long best = LLONG_MAX;
 				int best_r, best_step;
-				for (int r = 3; r <= 10; ++r) {
+				for (int r = 2; r <= 5; ++r) {
 					if (A.rows() / (batch * r)< 2)
 						break;
-					for (int cgstep = 10; cgstep <= 50; cgstep += 10) {
+					for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
@@ -381,5 +381,4 @@ int main() {
 		//cout << "JDµü´ú´ÎÊý" << jd.nIter << endl;
 
 	}
-	system("pause");
 }
