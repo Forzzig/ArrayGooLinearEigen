@@ -81,20 +81,7 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 	K1.reserve(A.rows());
 	for (int j = 0; j < A.rows(); ++j)
 		K1.insert(j, j) = 1;
-	tmpA = A;
-
-	////TODO 注意K逆的生成
-	//if (i == 0) {
-	//		tmpA -= lam(0, 0) * B;
-	//	}
-	//	else {
-	//		tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
-	//	}
-
-	//先取预处理矩阵为对角阵
-	for (int j = 0; j < A.rows(); ++j)
-		K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
-	Minv_set(U);
+	
 	MatrixXd x(tmpA.rows() + U.cols(), 1);
 	MatrixXd r(x.rows(), 1);
 	MatrixXd tpw(x.rows(), 1);
@@ -103,7 +90,20 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 	MatrixXd w(x.rows(), 1);
 	MatrixXd y;
 	for (int i = 0; i < b.cols(); ++i) {
+		
+		//TODO 注意K逆的生成
+		if (i == 0) {
+			tmpA = A;
+			tmpA -= lam(0, 0) * B;
+		}
+		else {
+			tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
+		}
 
+		//先取预处理矩阵为对角阵
+		for (int j = 0; j < A.rows(); ++j)
+			K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
+		Minv_set(U);
 		x.block(0, 0, tmpA.rows(), 1) = X.col(i);
 		x.block(tmpA.rows(), 0, U.cols(), 1) = MatrixXd::Zero(U.cols(), 1);
 
