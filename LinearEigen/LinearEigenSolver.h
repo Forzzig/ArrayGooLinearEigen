@@ -5,8 +5,8 @@
 #include<Eigen/Sparse>
 #include<vector>
 #include<iostream>
-#include<iomanip>
 #include<fstream>
+#include<TimeControl.h>
 
 using namespace std;
 using namespace Eigen;
@@ -17,6 +17,7 @@ public:
 	static int CHECKNUM;
 	static fstream coutput;
 	int nIter;
+	time_t start_time;
 	long long com_of_mul;
 	SparseMatrix<double>& A;
 	SparseMatrix<double>& B;

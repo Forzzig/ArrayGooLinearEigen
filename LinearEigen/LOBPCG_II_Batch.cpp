@@ -1,5 +1,4 @@
 #include<LOBPCG_II_Batch.h>
-#include<iostream>
 
 using namespace std;
 LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch)
@@ -30,6 +29,10 @@ void LOBPCG_II_Batch::compute() {
 	MatrixXd eval, evec, tmp, tmpA, mu;
 	Map<MatrixXd> V(storage, A.rows(), 3), v1(storage, 0, 0);
 	while (true) {
+		time_t now = time(&now);
+		if (now - start_time > time_tol)
+			break;
+
 		++nIter;
 		cout << "µü´ú²½£º" << nIter << endl;
 

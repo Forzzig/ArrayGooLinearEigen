@@ -1,9 +1,5 @@
 #ifndef __ITERRITZ_H__
 #define __ITERRITZ_H__
-#include<Eigen\Sparse>
-#include<Eigen\Dense>
-#include<EigenResult.h>
-#include<iostream>
 #include<LinearEigenSolver.h>
 
 using namespace Eigen;

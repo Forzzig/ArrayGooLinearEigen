@@ -1,16 +1,10 @@
 #include<iostream>
 #include<Eigen\Sparse>
 #include<mtxio.h>
-//#include<EigenResult.h>
-#include<LOBPCG_I.h>
 #include<LOBPCG_I_Batch.h>
-#include<LOBPCG_II.h>
 #include<LOBPCG_II_Batch.h>
-//#include<GCG_sv.h>
-//#include<LOBPCG_solver.h>
 #include<IterRitz.h>
 #include<Ritz.h>
-//#include<JD.h>
 #include<BJD.h>
 #include<ctime>
 #include<chrono>
@@ -18,6 +12,7 @@
 #include<iomanip>
 #include<fstream>
 #include<string>
+#include<TimeControl.h>
 
 using namespace std;
 using namespace Eigen;
@@ -30,8 +25,7 @@ fstream output;
 #define mBJD
 #define mRitz
 
-//超时限制
-#define time_tol 3600
+time_t current;
 
 //各种矩阵
 string matrices[1000] =
@@ -59,7 +53,6 @@ int main() {
 
 	fstream result;
 	int n_matrices = 0;
-	time_t current;
 	char buff[26];
 	while (matrices[n_matrices].length() != 0) {
 
@@ -101,7 +94,7 @@ int main() {
 		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
-		
+
 		result << "矩阵阶数：" << A.rows() << endl;
 		result << "非零元数：" << A.nonZeros() << endl << endl;
 		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
@@ -138,16 +131,16 @@ int main() {
 						best_step = cgstep;
 					}
 					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << endl;
-					int now = time(&current);
+					time_t now = time(&now);
 					if (now - current > time_tol)
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
-				int now = time(&current);
+				time_t now = time(&now);
 				if (now - current > time_tol)
 					break;
 			}
-			int now = time(&current);
+			time_t now = time(&now);
 			if (now - current > time_tol)
 				break;
 		}
@@ -199,16 +192,16 @@ int main() {
 						best_step = cgstep;
 					}
 					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << endl;
-					int now = time(&current);
+					time_t now = time(&now);
 					if (now - current > time_tol)
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
-				int now = time(&current);
+				time_t now = time(&now);
 				if (now - current > time_tol)
 					break;
 			}
-			int now = time(&current);
+			time_t now = time(&now);
 			if (now - current > time_tol)
 				break;
 		}
@@ -265,21 +258,21 @@ int main() {
 							best_step = cgstep;
 						}
 						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
-						int now = time(&current);
+						time_t now = time(&now);
 						if (now - current > time_tol)
 							break;
 					}
-					int now = time(&current);
+					time_t now = time(&now);
 					if (now - current > time_tol)
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
 					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
-				int now = time(&current);
+				time_t now = time(&now);
 				if (now - current > time_tol)
 					break;
 			}
-			int now = time(&current);
+			time_t now = time(&now);
 			if (now - current > time_tol)
 				break;
 		}
@@ -342,25 +335,25 @@ int main() {
 							}
 							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
 								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.com_of_mul << endl;
-							int now = time(&current);
+							time_t now = time(&now);
 							if (now - current > time_tol)
 								break;
 						}
-						int now = time(&current);
+						time_t now = time(&now);
 						if (now - current > time_tol)
 							break;
 					}
-					int now = time(&current);
+					time_t now = time(&now);
 					if (now - current > time_tol)
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best << "次乘法，设定为迭代" << best_restart << 
 					"次重启，gmres设定扩展空间大小" << best_gmres_size << "，总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
-				int now = time(&current);
+				time_t now = time(&now);
 				if (now - current > time_tol)
 					break;
 			}
-			int now = time(&current);
+			time_t now = time(&now);
 			if (now - current > time_tol)
 				break;
 		}
@@ -417,21 +410,21 @@ int main() {
 							best_step = cgstep;
 						}
 						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << endl;
-						int now = time(&current);
+						time_t now = time(&now);
 						if (now - current > time_tol)
 							break;
 					}
-					int now = time(&current);
+					time_t now = time(&now);
 					if (now - current > time_tol)
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
 					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
-				int now = time(&current);
+				time_t now = time(&now);
 				if (now - current > time_tol)
 					break;
 			}
-			int now = time(&current);
+			time_t now = time(&now);
 			if (now - current > time_tol)
 				break;
 		}

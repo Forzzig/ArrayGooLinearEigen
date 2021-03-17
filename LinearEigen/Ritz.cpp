@@ -24,6 +24,10 @@ void Ritz::compute() {
 	X1.resize(A.rows(), q * r);
 	P.resize(A.rows(), 0);
 	while (true) {
+		time_t now = time(&now);
+		if (now - start_time > time_tol)
+			break;
+
 		++nIter;
 		cout << "µü´ú²½£º" << nIter << endl;
 		cout << "ÒÆÆµ£º" << shift << endl;

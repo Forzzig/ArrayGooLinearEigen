@@ -1,5 +1,4 @@
 #include<BJD.h>
-#include<ctime>
 
 BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size) : LinearEigenSolver(A, B, nev) {
 	this->restart = restart;
@@ -38,6 +37,10 @@ void BJD::compute() {
 	/*long long t1, t2;
 	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
+		time_t now = time(&now);
+		if (now - start_time > time_tol)
+			break;
+
 		++nIter;
 		int prev = eigenvalues.size();
 		for (int i = 1; i <= restart; ++i) {

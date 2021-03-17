@@ -1,5 +1,4 @@
 #include<LOBPCG_I.h>
-#include<iostream>
 
 using namespace std;
 LOBPCG_I::LOBPCG_I(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)

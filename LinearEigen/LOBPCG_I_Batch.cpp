@@ -1,6 +1,4 @@
 #include<LOBPCG_I_Batch.h>
-#include<iostream>
-#include<algorithm>
 
 using namespace std;
 LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch)
@@ -32,6 +30,10 @@ void LOBPCG_I_Batch::compute() {
 	//所有已计算出来的特征向量和待计算的都依次存在storage里，避免内存拷贝
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
 	while (true) {
+		time_t now = time(&now);
+		if (now - start_time > time_tol)
+			break;
+
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 

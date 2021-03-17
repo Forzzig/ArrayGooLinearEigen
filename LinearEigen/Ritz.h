@@ -1,9 +1,5 @@
 #ifndef __RITZ_H__
 #define __RITZ_H__
-#include<Eigen\Sparse>
-#include<Eigen\Dense>
-#include<EigenResult.h>
-#include<iostream>
 #include<LinearEigenSolver.h>
 
 using namespace Eigen;

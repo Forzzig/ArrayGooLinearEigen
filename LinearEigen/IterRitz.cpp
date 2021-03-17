@@ -25,6 +25,10 @@ void IterRitz::compute() {
 	P.resize(A.rows(), 0);
 	Map<MatrixXd> V(&X1(0, 0), A.rows(), 0);
 	while (true) {
+		time_t now = time(&now);
+		if (now - start_time > time_tol)
+			break;
+
 		++nIter;
 		cout << "µü´ú²½£º" << nIter << endl;
 		cout << "ÒÆÆµ£º" << shift << endl;

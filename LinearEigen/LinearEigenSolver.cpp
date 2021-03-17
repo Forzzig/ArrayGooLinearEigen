@@ -1,5 +1,5 @@
 #include<LinearEigenSolver.h>
-#include<iostream>
+#include<iomanip>
 
 using namespace std;
 
@@ -12,4 +12,6 @@ LinearEigenSolver::LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<doubl
 	com_of_mul = 0;
 	eigenvectors.resize(A.rows(), 0);
 	coutput << scientific << setprecision(16);
+	extern time_t current;
+	start_time = current;
 }
