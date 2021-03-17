@@ -221,7 +221,7 @@ int main() {
 				for (int restart = restartrange; restart <= restartrange + 10; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
-					for (int gmres_size = cgrange; gmres_size <= cgrange + 20; gmres_size += 10) {
+					for (int gmres_size = cgrange / 2; gmres_size <= cgrange / 2 + 10; gmres_size += 5) {
 						if (A.rows() / gmres_size < 2)
 							break;
 						for (int gmres_restart = 1; gmres_restart <= 2; ++gmres_restart) {
