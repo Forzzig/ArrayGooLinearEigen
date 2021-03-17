@@ -101,19 +101,23 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 			tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
 		}
 
-		//TODO 避免0对角元,也可用其他方法
-		int has_0 = -1;
-		for (int j = 0; j < A.rows(); ++j)
-			if (abs(tmpA.coeff(j, j)) < LinearEigenSolver::ORTH_TOL) {
-				has_0 = j;
-				break;
-			}
-		if (has_0 >= 0)
-			tmpA += lam(i, 0) / 100 * B;
+		////TODO 避免0对角元,也可用其他方法
+		//int has_0 = -1;
+		//for (int j = 0; j < A.rows(); ++j)
+		//	if (abs(tmpA.coeff(j, j)) < LinearEigenSolver::ORTH_TOL) {
+		//		has_0 = j;
+		//		break;
+		//	}
+		//if (has_0 >= 0)
+		//	tmpA += lam(i, 0) / 100 * B;
 
 		//先取预处理矩阵为对角阵
 		for (int j = 0; j < A.rows(); ++j)
-			K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
+			if (abs(tmpA.coeff(j, j)) < LinearEigenSolver::ORTH_TOL)
+				K1.coeffRef(j, j) = 1 / LinearEigenSolver::ORTH_TOL;
+			else
+				K1.coeffRef(j, j) = 1 / tmpA.coeff(j, j);
+
 		Minv_set(U);
 		x.block(0, 0, tmpA.rows(), 1) = X.col(i);
 		x.block(tmpA.rows(), 0, U.cols(), 1) = MatrixXd::Zero(U.cols(), 1);
@@ -183,9 +187,9 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 		}
 		X.col(i) = x.block(0, 0, A.rows(), 1);
 		
-		//TODO 对角元的额外处理复原
-		if (has_0 >= 0)
-			tmpA -= lam(i, 0) / 100 * B;
+		////TODO 对角元的额外处理复原
+		//if (has_0 >= 0)
+		//	tmpA -= lam(i, 0) / 100 * B;
 	}
 }
 #endif
