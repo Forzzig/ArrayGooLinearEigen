@@ -26,9 +26,9 @@ fstream output;
 
 #define mLOBPCG_I
 #define mLOBPCG_II
+#define miRitz
 #define mBJD
 #define mRitz
-#define miRitz
 
 //各种矩阵
 string matrices[1000] =
@@ -195,6 +195,66 @@ int main() {
 		result.close();
 		output.close();
 #endif
+
+#ifdef miRitz
+		result.open("./result/" + matrixName + "-iRitz.txt", ios::out | ios::app);
+
+		current = time(&current);
+		ctime_s(buff, sizeof(buff), &current);
+		result << buff;
+
+		result << "矩阵阶数：" << A.rows() << endl;
+		result << "非零元数：" << A.nonZeros() << endl << endl;
+		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
+		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
+		output.open("./result/" + matrixName + "-IterRitz-statistics.txt", ios::out | ios::app);
+		output << buff;
+		output << "nev, batch, r, cgstep, iter, multi" << endl;
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+				if (nev < batch)
+					break;
+				if (A.rows() / nev < 3)
+					break;
+
+				long long best = LLONG_MAX;
+				int best_r, best_step;
+				for (int r = 2; r <= 4; ++r) {
+					if (A.rows() / (batch * r) < 2)
+						break;
+					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
+						if (A.rows() / cgstep < 2)
+							break;
+						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+						result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+						cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+						IterRitz iritz(A, B, nev, cgstep, batch, r);
+						iritz.compute();
+
+						for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
+							result << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
+							//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
+							result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
+						}
+						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
+						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl << endl;
+						if (iritz.com_of_mul < best) {
+							best = iritz.com_of_mul;
+							best_r = r;
+							best_step = cgstep;
+						}
+						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
+					}
+				}
+				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
+					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
+			}
+		}
+		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
+		result.close();
+		output.close();
+#endif
+
 #ifdef mBJD
 		result.open("./result/" + matrixName + "-BJD.txt", ios::out | ios::app);
 
@@ -260,6 +320,7 @@ int main() {
 		result.close();
 		output.close();
 #endif
+
 #ifdef mRitz
 		result.open("./result/" + matrixName + "-Ritz.txt", ios::out | ios::app);
 
@@ -315,64 +376,6 @@ int main() {
 			}
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
-		result.close();
-		output.close();
-#endif
-#ifdef miRitz
-		result.open("./result/" + matrixName + "-iRitz.txt", ios::out | ios::app);
-
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
-		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-IterRitz-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, r, cgstep, iter, multi" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
-				if (nev < batch)
-					break;
-				if (A.rows() / nev < 3)
-					break;
-
-				long long best = LLONG_MAX;
-				int best_r, best_step;
-				for (int r = 2; r <= 4; ++r) {
-					if (A.rows() / (batch * r)< 2)
-						break;
-					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
-						if (A.rows() / cgstep < 2)
-							break;
-						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-						result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						IterRitz iritz(A, B, nev, cgstep, batch, r);
-						iritz.compute();
-
-						for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
-							result << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
-							//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
-							result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
-						}
-						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
-						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl << endl;
-						if (iritz.com_of_mul < best) {
-							best = iritz.com_of_mul;
-							best_r = r;
-							best_step = cgstep;
-						}
-						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
-					}
-				}
-				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
-					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
-			}
-		}
-		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
 		result.close();
 		output.close();
 #endif
