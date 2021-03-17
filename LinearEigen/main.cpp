@@ -83,6 +83,11 @@ int main() {
 		/*cout << "A-------------------------" << endl << A << endl;
 		cout << "B-------------------------" << endl << B << endl;*/
 		//system("pause");
+		
+		int cgrange = round(log(A.rows() / 1000 + 1) / log(2)) * 10 + 10;
+		int batchrange = 5;
+		int nevrange = 20;
+		int restartrange = round(log(A.rows() / 1000 + 1) / log(2)) * 5 + 10;
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
@@ -101,15 +106,15 @@ int main() {
 		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt", ios::out | ios::app);
 		output << buff;
 		output << "nev, batch, cgstep, iter, multi" << endl;
-		for (int nev = 5; nev <= 20; nev += 5) {
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = 5; batch <= 20; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
+				for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -153,15 +158,15 @@ int main() {
 		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt", ios::out | ios::app);
 		output << buff;
 		output << "nev, batch, cgstep, iter, multi" << endl;
-		for (int nev = 5; nev <= 20; nev += 5) {
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = 5; batch <= 20; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
+				for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -204,22 +209,22 @@ int main() {
 		output.open("./result/" + matrixName + "-BJD-statistics.txt", ios::out | ios::app);
 		output << buff;
 		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
-		for (int nev = 5; nev <= 20; nev += 5) {
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = 5; batch <= 20; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
 				int best_gmres_size, best_gmres_restart, best_restart;
 
-				for (int restart = 5; restart <= 20; restart += 5) {
+				for (int restart = restartrange; restart <= restartrange + 10; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
-					for (int gmres_size = 5; gmres_size <= 15; gmres_size += 5) {
+					for (int gmres_size = cgrange; gmres_size <= cgrange + 20; gmres_size += 10) {
 						if (A.rows() / gmres_size < 2)
 							break;
-						for (int gmres_restart = 1; gmres_restart <= 3; ++gmres_restart) {
+						for (int gmres_restart = 1; gmres_restart <= 2; ++gmres_restart) {
 							//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
 							result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << 
 								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
@@ -269,19 +274,19 @@ int main() {
 		output.open("./result/" + matrixName + "-Ritz-statistics.txt", ios::out | ios::app);
 		output << buff;
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
-		for (int nev = 5; nev <= 20; nev += 5) {
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = 5; batch <= 20; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (batch > nev)
 					break;
 
 				long long best = LLONG_MAX;
 				int best_r, best_step;
-				for (int r = 2; r <= 5; ++r) {
+				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
-					for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
+					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
@@ -327,8 +332,8 @@ int main() {
 		output.open("./result/" + matrixName + "-IterRitz-statistics.txt", ios::out | ios::app);
 		output << buff;
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
-		for (int nev = 5; nev <= 20; nev += 5) {
-			for (int batch = 5; batch <= 20; batch += 5) {
+		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (nev < batch)
 					break;
 				if (A.rows() / nev < 3)
@@ -336,10 +341,10 @@ int main() {
 
 				long long best = LLONG_MAX;
 				int best_r, best_step;
-				for (int r = 2; r <= 5; ++r) {
+				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r)< 2)
 						break;
-					for (int cgstep = 10; cgstep <= 30; cgstep += 10) {
+					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
