@@ -56,6 +56,8 @@ int main() {
 
 	fstream result;
 	int n_matrices = 0;
+	time_t current;
+	char buff[26];
 	while (matrices[n_matrices].length() != 0) {
 
 		//需要的时候开随机化
@@ -88,8 +90,7 @@ int main() {
 		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
 		result.open("./result/" + matrixName + "-LOBPCG_I.txt", ios::out | ios::app);
 		
-		time_t current = time(&current);
-		char buff[26];
+		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
 		
@@ -141,8 +142,7 @@ int main() {
 #ifdef mLOBPCG_II
 		result.open("./result/" + matrixName + "-LOBPCG_II.txt", ios::out | ios::app);
 
-		time_t current = time(&current);
-		char buff[26];
+		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
 
@@ -193,8 +193,7 @@ int main() {
 #ifdef mBJD
 		result.open("./result/" + matrixName + "-BJD.txt", ios::out | ios::app);
 
-		time_t current = time(&current);
-		char buff[26];
+		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
 
@@ -259,8 +258,7 @@ int main() {
 #ifdef mRitz
 		result.open("./result/" + matrixName + "-Ritz.txt", ios::out | ios::app);
 
-		time_t current = time(&current);
-		char buff[26];
+		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
 
@@ -318,8 +316,7 @@ int main() {
 #ifdef miRitz
 		result.open("./result/" + matrixName + "-iRitz.txt", ios::out | ios::app);
 
-		time_t current = time(&current);
-		char buff[26];
+		current = time(&current);
 		ctime_s(buff, sizeof(buff), &current);
 		result << buff;
 
