@@ -87,7 +87,7 @@ int main() {
 		int cgrange = round(log(A.rows() / 1000 + 1) / log(2)) * 10 + 10;
 		int batchrange = 5;
 		int nevrange = 20;
-		int restartrange = round(log(A.rows() / 1000 + 1) / log(2)) * 5 + 10;
+		int restartrange = round(log(A.rows() / 1000 + 1) / log(2)) * 5 + 5;
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
