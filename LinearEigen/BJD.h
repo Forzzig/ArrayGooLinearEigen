@@ -82,16 +82,17 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 	for (int j = 0; j < A.rows(); ++j)
 		K1.insert(j, j) = 1;
 	
-	MatrixXd x(tmpA.rows() + U.cols(), 1);
+	MatrixXd x(A.rows() + U.cols(), 1);
 	MatrixXd r(x.rows(), 1);
 	MatrixXd tpw(x.rows(), 1);
 	MatrixXd V(x.rows(), m);
 	MatrixXd H(m + 1, m);
 	MatrixXd w(x.rows(), 1);
 	MatrixXd y;
+	
 	for (int i = 0; i < b.cols(); ++i) {
 		
-		//TODO 注意K逆的生成
+		//注意K逆的生成
 		if (i == 0) {
 			tmpA = A;
 			tmpA -= lam(0, 0) * B;
@@ -99,6 +100,16 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 		else {
 			tmpA -= (lam(i, 0) - lam(i - 1, 0)) * B;
 		}
+
+		//TODO 避免0对角元,也可用其他方法
+		int has_0 = -1;
+		for (int j = 0; j < A.rows(); ++j)
+			if (abs(tmpA.coeff(j, j)) < LinearEigenSolver::ORTH_TOL) {
+				has_0 = j;
+				break;
+			}
+		if (has_0 >= 0)
+			tmpA += lam(i, 0) / 100 * B;
 
 		//先取预处理矩阵为对角阵
 		for (int j = 0; j < A.rows(); ++j)
@@ -171,6 +182,10 @@ void BJD::L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs&
 				break;
 		}
 		X.col(i) = x.block(0, 0, A.rows(), 1);
+		
+		//TODO 对角元的额外处理复原
+		if (has_0 >= 0)
+			tmpA -= lam(i, 0) / 100 * B;
 	}
 }
 #endif

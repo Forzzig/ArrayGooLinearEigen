@@ -25,7 +25,6 @@ BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, 
 	this->cgstep = cgstep;
 	this->batch = batch;
 	eigenvectors.resize(A.rows(), 0);
-
 }
 
 void BJD::compute() {
@@ -47,7 +46,6 @@ void BJD::compute() {
 			cout << "第" << nIter - 1 << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
 			cout << Vj.cols() << endl;
-
 			//t1 = clock();
 
 			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), HAB.block(0, 0, Vj.cols(), Vj.cols()), 0, eval, evec);
