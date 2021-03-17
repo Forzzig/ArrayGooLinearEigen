@@ -12,6 +12,5 @@ LinearEigenSolver::LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<doubl
 	com_of_mul = 0;
 	eigenvectors.resize(A.rows(), 0);
 	coutput << scientific << setprecision(16);
-	extern time_t current;
-	start_time = current;
+	start_time = time(&start_time);
 }
