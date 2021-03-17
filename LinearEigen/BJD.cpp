@@ -170,7 +170,7 @@ void BJD::compute() {
 			break;
 		
 		int left = nd - (eigenvalues.size() - prev);
-		nd = batch < nev - eigenvalues.size() ? batch : nev - eigenvalues.size();
+		nd = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
 		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);
 		Vj.leftCols(left) = tmpevec.leftCols(left);
 		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);

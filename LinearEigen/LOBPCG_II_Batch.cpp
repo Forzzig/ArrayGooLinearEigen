@@ -106,7 +106,7 @@ void LOBPCG_II_Batch::compute() {
 		if (cnv >= nev)
 			break;
 
-		int wid = batch < nev - eigenvalues.size() ? batch : nev - eigenvalues.size();
+		int wid = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
 		new (&W) Map<MatrixXd, Unaligned, OuterStride<>>(storage, A.rows(), wid, OuterStride<>(3 * A.rows()));
 		new (&X) Map<MatrixXd, Unaligned, OuterStride<>>(storage + A.rows(), A.rows(), wid, OuterStride<>(3 * A.rows()));
 		new (&P) Map<MatrixXd, Unaligned, OuterStride<>>(storage + A.rows() * 2, A.rows(), wid, OuterStride<>(3 * A.rows()));

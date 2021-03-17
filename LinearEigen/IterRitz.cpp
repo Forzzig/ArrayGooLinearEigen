@@ -21,100 +21,83 @@ void IterRitz::compute() {
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
 	SparseMatrix<double> tmpA;
+	X1.resize(A.rows(), q * (r + 1));
 	P.resize(A.rows(), 0);
+	Map<MatrixXd> V(&X1(0, 0), A.rows(), 0);
 	while (true) {
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 		cout << "移频：" << shift << endl;
-		X1.resize(A.rows(), q * r);
-		for (int i = 0; i < r; ++i) {
-			if (i == 0) {
-				
-				tmp = B * X;
-				com_of_mul += B.nonZeros();
+		
+		tmp = B * X;
+		com_of_mul += B.nonZeros();
 
-				for (int j = 0; j < q; ++j) {
-					tmp.col(j) *= LAM(j, 0);
-				}
-				com_of_mul += q * A.rows();
+		for (int j = 0; j < q; ++j) {
+			tmp.col(j) *= LAM(j, 0);
+		}
+		com_of_mul += q * A.rows();
 
-				X1.block(0, 0, A.rows(), q) = linearsolver.solveWithGuess(tmp, X);
-				com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
-					cgstep * (A.nonZeros() + 7 * A.rows()));
+		X1.leftCols(q) = linearsolver.solveWithGuess(tmp, X);
+		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
+			cgstep * (A.nonZeros() + 7 * A.rows()));
+		
+		tmp = X1.leftCols(q);
+		rls = A * tmp;
+		com_of_mul += q * A.nonZeros();
 
-				tmp = X1.block(0, 0, A.rows(), q);
-				rls = tmp.transpose() * A * tmp;
-				com_of_mul += q * (A.nonZeros() + A.rows());
+		for (int j = 0; j < q; ++j)
+			LAM(j, 0) = (tmp.col(j).transpose() * rls.col(j))(0, 0);
 
-				for (int j = 0; j < q; ++j)
-					LAM(j, 0) = rls(j, j);
+		orthogonalization(X1.leftCols(q), eigenvectors, B);
+		com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
 
-				orthogonalization(X1.block(0, 0, A.rows(), q), eigenvectors, B);
-				com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
+		orthogonalization(X1.leftCols(q), B);
+		com_of_mul += (q + 1) * q * A.rows();
+		for (int i = 1; i < r; ++i) {
 
-				orthogonalization(X1.block(0, 0, A.rows(), q), B);
-				com_of_mul += (q + 1) * q * A.rows();
-			}
-			else {
-				/*tmp = B * X1.block(0, (i - 1) * q, A.rows(), q);
-				for (int j = 0; j < q; ++j) {
-					tmp.col(j) *= LAM(j, 0);
-				}
-				X1.block(0, i * q, A.rows(), q) = linearsolver.solveWithGuess(tmp, X1.block(0, (i - 1) * q, A.rows(), q));
-				*/
-				rls = A * tmp;
-				com_of_mul += A.nonZeros() * tmp.cols();
+			for (int j = 0; j < q; ++j)
+				rls.col(j) -= B * tmp.col(j) * LAM(j, 0);
+			com_of_mul += q * (B.nonZeros() + A.rows());
 
-				for (int j = 0; j < q; ++j)
-					rls.col(j) -= B * tmp.col(j) * LAM(j, 0);
-				com_of_mul += q * (B.nonZeros() + A.rows());
+			X1.middleCols(i * q, q) = linearsolver.solve(rls);
+			com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
+				cgstep * (A.nonZeros() + 7 * A.rows()));
 
-				X1.block(0, i * q, A.rows(), q) = linearsolver.solve(rls);
-				com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
-					cgstep * (A.nonZeros() + 7 * A.rows()));
+			tmp -= X1.middleCols(i * q, q);
+			rls = A * tmp;
 
-				tmp -= X1.block(0, i * q, A.rows(), q);
-			}
-			orthogonalization(X1.block(0, i * q, A.rows(), q), eigenvectors, B);
+			orthogonalization(X1.middleCols(i * q, q), eigenvectors, B);
 			com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
 
-			orthogonalization(X1.block(0, i * q, A.rows(), q), X1.block(0, 0, A.rows(), i * q), B);
+			orthogonalization(X1.middleCols(i * q, q), X1.leftCols(i * q), B);
 			com_of_mul += q * i * q * A.rows() * 2;
 
-			orthogonalization(X1.block(0, i * q, A.rows(), q), B);
+			orthogonalization(X1.middleCols(i * q, q), B);
 			com_of_mul += (q + 1) * q * A.rows();
 		}
-		orthogonalization(P, X1, B);
-		com_of_mul += P.cols() * X1.cols() * A.rows() * 2;
 
-		orthogonalization(P, eigenvectors, B);
-		com_of_mul += P.cols() * eigenvectors.cols() * A.rows() * 2;
+		if (nIter > 1) {
+			orthogonalization(P, eigenvectors, B);
+			com_of_mul += P.cols() * eigenvectors.cols() * A.rows() * 2;
+			
+			X1.middleCols(r * q, q) = P;
+			int dep = orthogonalization(X1.leftCols(q * (r + 1)), B);
+			//com_of_mul += (q * (r + 1) + 1) * q * (r + 1) * A.rows();
 
-		orthogonalization(P, B);
-		com_of_mul += (P.cols() + 1) * P.cols() * A.rows();
-
-		V.resize(A.rows(), P.cols() + X1.cols());
-		V << X1, P;
-		/*if (cnv > 0) {
-			coutput << "eigenvectors---------------------------------------" << endl << eigenvectors << endl;
-			coutput << "X1---------------------------------------" << endl << X1 << endl;
-			coutput << "P---------------------------------------" << endl << P << endl;
-		}*/
-		//orthogonalization(V, eigenvectors, B);
-		//orthogonalization(V, B);
+			new (&V) Map<MatrixXd>(&X1(0, 0), A.rows(), q * (r + 1) - dep);
+		}
+		else {
+			int dep = orthogonalization(X1.leftCols(q * r), B);
+			new (&V) Map<MatrixXd>(&X1(0, 0), A.rows(), q * r - dep);
+		}
 		cout << V.cols() << endl;
 		projection_RR(V, A, eval, evec);
 		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
 
 		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
-		/*orthogonalization(X1, eigenvectors, B);
-		orthogonalization(X1, B);
-		projection_RR(X1, A, eval, evec);
-
-		Xnew = X1 * evec;*/
 		
 		Xnew = V * evec;
-		com_of_mul += A.rows() * V.cols() * nev;
+		com_of_mul += A.rows() * V.cols() * evec.cols();
 
 		//cout << Xnew << endl;
 		system("cls");
@@ -124,8 +107,7 @@ void IterRitz::compute() {
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		//system("pause");
 		cout << "已收敛特征向量个数：" << cnv << endl;
-		/*if (cnv > 0)
-			system("pause");*/
+
 		if (cnv >= nev) {
 			break;
 		}

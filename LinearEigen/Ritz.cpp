@@ -21,83 +21,55 @@ void Ritz::compute() {
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
 	SparseMatrix<double> tmpA;
+	X1.resize(A.rows(), q * r);
 	P.resize(A.rows(), 0);
 	while (true) {
 		++nIter;
 		cout << "µü´ú²½£º" << nIter << endl;
 		cout << "ÒÆÆµ£º" << shift << endl;
-		X1.resize(A.rows(), q * r);
-		for (int i = 0; i < r; ++i) {
-			if (i == 0) {
+		
+		tmp = B * X;
+		com_of_mul += B.nonZeros();
 
-				tmp = B * X;
-				com_of_mul += B.nonZeros();
+		for (int j = 0; j < q; ++j) {
+			tmp.col(j) *= LAM(j, 0);
+		}
+		com_of_mul += q * A.rows();
 
-				for (int j = 0; j < q; ++j) {
-					tmp.col(j) *= LAM(j, 0);
-				}
-				com_of_mul += q * A.rows();
+		X1.leftCols(q) = linearsolver.solveWithGuess(tmp, X);
+		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
+			cgstep * (A.nonZeros() + 7 * A.rows()));
 
-				X1.block(0, 0, A.rows(), q) = linearsolver.solveWithGuess(tmp, X);
-				com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
-					cgstep * (A.nonZeros() + 7 * A.rows()));
+		orthogonalization(X1.leftCols(q), eigenvectors, B);
+		com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
 
-				/*tmp = X1.block(0, 0, A.rows(), q);
-				rls = tmp.transpose() * A * tmp;
-				com_of_mul += q * (A.nonZeros() + A.rows());
+		orthogonalization(X1.leftCols(q), B);
+		com_of_mul += (q + 1) * q * A.rows();
 
-				for (int j = 0; j < q; ++j)
-					LAM(j, 0) = rls(j, j);*/
-
-				orthogonalization(X1.block(0, 0, A.rows(), q), eigenvectors, B);
-				com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
-
-				orthogonalization(X1.block(0, 0, A.rows(), q), B);
-				com_of_mul += (q + 1) * q * A.rows();
-			}
-			else {
-				tmp = B * X1.block(0, (i - 1) * q, A.rows(), q);
-				com_of_mul += B.nonZeros() * q;
+		for (int i = 1; i < r; ++i) {
+			
+			tmp = B * X1.middleCols((i - 1) * q, q);
+			com_of_mul += B.nonZeros() * q;
 				
-				for (int j = 0; j < q; ++j) {
-					tmp.col(j) *= LAM(j, 0);
-				}
-				com_of_mul += A.rows() * q;
-
-				X1.block(0, i * q, A.rows(), q) = linearsolver.solveWithGuess(tmp, X1.block(0, (i - 1) * q, A.rows(), q));
-				com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
-					cgstep * (A.nonZeros() + 7 * A.rows()));
-
+			for (int j = 0; j < q; ++j) {
+				tmp.col(j) *= LAM(j, 0);
 			}
-			orthogonalization(X1.block(0, i * q, A.rows(), q), eigenvectors, B);
+			com_of_mul += A.rows() * q;
+
+			X1.middleCols(i * q, q) = linearsolver.solveWithGuess(tmp, X1.middleCols((i - 1) * q, q));
+			com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
+				cgstep * (A.nonZeros() + 7 * A.rows()));
+
+			orthogonalization(X1.middleCols(i * q, q), eigenvectors, B);
 			com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
 
-			orthogonalization(X1.block(0, i * q, A.rows(), q), X1.block(0, 0, A.rows(), i * q), B);
+			orthogonalization(X1.middleCols(i * q, q), X1.leftCols(i * q), B);
 			com_of_mul += q * i * q * A.rows() * 2;
 
-			orthogonalization(X1.block(0, i * q, A.rows(), q), B);
+			orthogonalization(X1.middleCols(i * q, q), B);
 			com_of_mul += (q + 1) * q * A.rows();
 		}
-		/*orthogonalization(P, X1, B);
-		com_of_mul += P.cols() * X1.cols() * A.rows() * 2;
-
-		orthogonalization(P, eigenvectors, B);
-		com_of_mul += P.cols() * eigenvectors.cols() * A.rows() * 2;
-
-		orthogonalization(P, B);
-		com_of_mul += (P.cols() + 1) * P.cols() * A.rows();
-
-		V.resize(A.rows(), P.cols() + X1.cols());
-		V << X1, P;*/
-
-
-		/*if (cnv > 0) {
-			coutput << "eigenvectors---------------------------------------" << endl << eigenvectors << endl;
-			coutput << "X1---------------------------------------" << endl << X1 << endl;
-			coutput << "P---------------------------------------" << endl << P << endl;
-		}*/
-		//orthogonalization(V, eigenvectors, B);
-		//orthogonalization(V, B);
+		
 		cout << X1.cols() << endl;
 		projection_RR(X1, A, eval, evec);
 		com_of_mul += X1.cols() * A.nonZeros() * X1.cols() + (24 * X1.cols() * X1.cols() * X1.cols());
@@ -110,7 +82,7 @@ void Ritz::compute() {
 		Xnew = X1 * evec;*/
 
 		Xnew = X1 * evec;
-		com_of_mul += A.rows() * X1.cols() * nev;
+		com_of_mul += A.rows() * X1.cols() * evec.cols();
 
 		//cout << Xnew << endl;
 		system("cls");

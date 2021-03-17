@@ -76,7 +76,7 @@ void LOBPCG_I_Batch::compute() {
 		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
 
 		//子空间V投影下的新的近似特征向量
-		int nd = (batch < nev - eigenvalues.size()) ? batch : nev - eigenvalues.size();
+		int nd = (2 * batch < V.cols()) ? 2 * batch : V.cols();
 		tmpA = V * evec.block(0, 0, V.cols(), nd);
 		com_of_mul += A.rows() * V.cols() * nd;
 
@@ -86,18 +86,12 @@ void LOBPCG_I_Batch::compute() {
 		if (cnv >= nev)
 			break;
 
-		int wid = batch < nev - eigenvalues.size() ? batch : nev - eigenvalues.size();
+		int wid = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
 		new (&W) Map<MatrixXd>(storage, A.rows(), wid);
 		new (&X) Map<MatrixXd>(storage + A.rows() * wid, A.rows(), wid);
 		new (&P) Map<MatrixXd>(storage + A.rows() * wid * 2, A.rows(), tmp.cols());
 		
-		int xwid = wid < tmpA.cols() - (cnv - prev) ? wid : tmpA.cols() - (cnv - prev);
-		X.leftCols(xwid) = tmpA.leftCols(xwid);
-		X.rightCols(X.cols() - xwid) = MatrixXd::Random(A.rows(), X.cols() - xwid);
-		
-		orthogonalization(X, B);
-		com_of_mul += (X.cols() + 1) * X.cols() * A.rows();
-
+		X = tmpA.leftCols(wid);
 		P = tmp;
 	}
 }
