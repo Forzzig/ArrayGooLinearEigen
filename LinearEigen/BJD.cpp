@@ -38,7 +38,7 @@ void BJD::compute() {
 	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
 		time_t now = time(&now);
-		if (now - start_time > time_tol)
+		if (timeCheck(start_time, now))
 			break;
 
 		++nIter;

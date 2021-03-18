@@ -153,6 +153,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mtxio.cpp" />
     <ClCompile Include="Ritz.cpp" />
+    <ClCompile Include="TimeControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
@@ -164,6 +165,7 @@
     <ClInclude Include="LOBPCG_II_Batch.h" />
     <ClInclude Include="LOBPCG_I_Batch.h" />
     <ClInclude Include="mtxio.h" />
+    <ClInclude Include="output_helper.h" />
     <ClInclude Include="Ritz.h" />
     <ClInclude Include="TimeControl.h" />
   </ItemGroup>

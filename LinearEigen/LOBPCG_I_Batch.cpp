@@ -31,7 +31,7 @@ void LOBPCG_I_Batch::compute() {
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
 	while (true) {
 		time_t now = time(&now);
-		if (now - start_time > time_tol)
+		if (timeCheck(start_time, now))
 			break;
 
 		++nIter;

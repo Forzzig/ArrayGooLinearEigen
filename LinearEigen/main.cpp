@@ -9,21 +9,26 @@
 #include<ctime>
 #include<chrono>
 #include<cstdlib>
-#include<iomanip>
 #include<fstream>
 #include<string>
 #include<TimeControl.h>
+#include<output_helper.h>
 
 using namespace std;
 using namespace Eigen;
 
 fstream output;
+fstream result;
 
+//求解器列表
 #define mLOBPCG_I
 #define mLOBPCG_II
 #define miRitz
 #define mBJD
 #define mRitz
+
+//特殊后缀
+string suff = "";
 
 time_t current;
 
@@ -51,17 +56,13 @@ string matrices[1000] =
 
 int main() {
 
-	fstream result;
 	int n_matrices = 0;
-	char buff[26];
+	string method;
+	
+	//需要的时候开随机化
+	//	srand((unsigned)time(NULL));
+	
 	while (matrices[n_matrices].length() != 0) {
-
-		//需要的时候开随机化
-		//	srand((unsigned)time(NULL));
-
-		//给人看的就不用科学计数法了
-		//cout << scientific << setprecision(16);
-
 		//读A矩阵
 		string matrixName = matrices[n_matrices];
 		SparseMatrix<double> A;
@@ -75,33 +76,17 @@ int main() {
 		B.reserve(A.rows());
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
-
-		/*cout << "A-------------------------" << endl << A << endl;
-		cout << "B-------------------------" << endl << B << endl;*/
-		//system("pause");
 		
-		int cgrange = round(log(A.rows() / 1000 + 1) / log(2)) * 10 + 10;
+		int cgrange = floor(log(A.rows() / 1000 + 1) / log(2)) * 10 + 10;
 		int batchrange = 5;
 		int nevrange = 20;
-		int restartrange = round(log(A.rows() / 1000 + 1) / log(2)) * 5 + 5;
+		int restartrange = floor(log(A.rows() / 1000 + 1) / log(2)) * 5 + 5;
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
 #ifdef mLOBPCG_I
-		cout << "对" << matrixName << "使用LOBPCG_I....................." << endl;
-		result.open("./result/" + matrixName + "-LOBPCG_I.txt", ios::out | ios::app);
-		
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		result << matrixName + "，LOBPCG_I开始求解........................................." << endl;
-		
-		output.open("./result/" + matrixName + "-LOBPCG-I-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, cgstep, iter, multi" << endl;
+		method = "LOBPCG_I";
+		fstream_prepare(result, output, A, matrixName, method, suff);
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -132,16 +117,16 @@ int main() {
 					}
 					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << endl;
 					time_t now = time(&now);
-					if (now - current > time_tol)
+					if (totalTimeCheck(current, now))
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 				time_t now = time(&now);
-				if (now - current > time_tol)
+				if (totalTimeCheck(current, now))
 					break;
 			}
 			time_t now = time(&now);
-			if (now - current > time_tol)
+			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
@@ -150,19 +135,8 @@ int main() {
 #endif
 
 #ifdef mLOBPCG_II
-		result.open("./result/" + matrixName + "-LOBPCG_II.txt", ios::out | ios::app);
-
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		cout << "对" << matrixName << "使用LOBPCG_II....................." << endl;
-		result << matrixName + "，LOBPCG_II开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-LOBPCG-II-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, cgstep, iter, multi" << endl;
+		method = "LOBPCG_II";
+		fstream_prepare(result, output, A, matrixName, method, suff);
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -193,16 +167,16 @@ int main() {
 					}
 					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << endl;
 					time_t now = time(&now);
-					if (now - current > time_tol)
+					if (totalTimeCheck(current, now))
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
 				time_t now = time(&now);
-				if (now - current > time_tol)
+				if (totalTimeCheck(current, now))
 					break;
 			}
 			time_t now = time(&now);
-			if (now - current > time_tol)
+			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
@@ -211,19 +185,8 @@ int main() {
 #endif
 
 #ifdef miRitz
-		result.open("./result/" + matrixName + "-iRitz.txt", ios::out | ios::app);
-
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		cout << "对" << matrixName << "使用改进Ritz法....................." << endl;
-		result << matrixName + "，改进Ritz法开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-IterRitz-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, r, cgstep, iter, multi" << endl;
+		method = "IterRitz";
+		fstream_prepare(result, output, A, matrixName, method, suff);
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (nev < batch)
@@ -259,21 +222,21 @@ int main() {
 						}
 						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
 						time_t now = time(&now);
-						if (now - current > time_tol)
+						if (totalTimeCheck(current, now))
 							break;
 					}
 					time_t now = time(&now);
-					if (now - current > time_tol)
+					if (totalTimeCheck(current, now))
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
 					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
 				time_t now = time(&now);
-				if (now - current > time_tol)
+				if (totalTimeCheck(current, now))
 					break;
 			}
 			time_t now = time(&now);
-			if (now - current > time_tol)
+			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
@@ -282,19 +245,8 @@ int main() {
 #endif
 
 #ifdef mBJD
-		result.open("./result/" + matrixName + "-BJD.txt", ios::out | ios::app);
-
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		cout << "对" << matrixName << "使用块J-D....................." << endl;
-		result << matrixName + "，块J-D开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-BJD-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, multi" << endl;
+		method = "BJD";
+		fstream_prepare(result, output, A, matrixName, method, suff);
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -336,25 +288,25 @@ int main() {
 							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
 								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.com_of_mul << endl;
 							time_t now = time(&now);
-							if (now - current > time_tol)
+							if (totalTimeCheck(current, now))
 								break;
 						}
 						time_t now = time(&now);
-						if (now - current > time_tol)
+						if (totalTimeCheck(current, now))
 							break;
 					}
 					time_t now = time(&now);
-					if (now - current > time_tol)
+					if (totalTimeCheck(current, now))
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best << "次乘法，设定为迭代" << best_restart << 
 					"次重启，gmres设定扩展空间大小" << best_gmres_size << "，总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
 				time_t now = time(&now);
-				if (now - current > time_tol)
+				if (totalTimeCheck(current, now))
 					break;
 			}
 			time_t now = time(&now);
-			if (now - current > time_tol)
+			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
@@ -363,19 +315,8 @@ int main() {
 #endif
 
 #ifdef mRitz
-		result.open("./result/" + matrixName + "-Ritz.txt", ios::out | ios::app);
-
-		current = time(&current);
-		ctime_s(buff, sizeof(buff), &current);
-		result << buff;
-
-		result << "矩阵阶数：" << A.rows() << endl;
-		result << "非零元数：" << A.nonZeros() << endl << endl;
-		cout << "对" << matrixName << "使用迭代Ritz法....................." << endl;
-		result << matrixName + "，迭代Ritz法开始求解........................................." << endl;
-		output.open("./result/" + matrixName + "-Ritz-statistics.txt", ios::out | ios::app);
-		output << buff;
-		output << "nev, batch, r, cgstep, iter, multi" << endl;
+		method = "Ritz";
+		fstream_prepare(result, output, A, matrixName, method, suff);
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -411,21 +352,21 @@ int main() {
 						}
 						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << endl;
 						time_t now = time(&now);
-						if (now - current > time_tol)
+						if (totalTimeCheck(current, now))
 							break;
 					}
 					time_t now = time(&now);
-					if (now - current > time_tol)
+					if (totalTimeCheck(current, now))
 						break;
 				}
 				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
 					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
 				time_t now = time(&now);
-				if (now - current > time_tol)
+				if (totalTimeCheck(current, now))
 					break;
 			}
 			time_t now = time(&now);
-			if (now - current > time_tol)
+			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
@@ -435,46 +376,5 @@ int main() {
 		
 		system("cls");
 		++n_matrices;
-
-
-		//system("pause");
-
-		///*cout << "原始GCG开始求解..." << endl;
-		//GCG_sv gsv(A, B, 10, 40, 10);
-		//gsv.compute();*/
-
-		//cout << "LOBPCG开始求解..." << endl;
-		//LOBPCG_solver LOBPCG(A, B, 20, 40);
-		//LOBPCG.compute();
-
-		//cout << "JD开始求解..." << endl;
-		////(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size)
-		//JD jd(A, B, 20, 100, 10, 5, 10);
-		///*jd.compute();*/
-
-
-		////for (int i = 0; i < gsv.eigenvalues.size(); ++i) {
-		////	cout << "第" << i + 1 << "个特征值：" << gsv.eigenvalues[i] << endl;
-		////	//cout << "第" << i + 1 << "个特征向量：" << gcg.eigenvectors.col(i).transpose() << endl;
-		////	cout << (A * gsv.eigenvectors.col(i) - gsv.eigenvalues[i] * B * gsv.eigenvectors.col(i)).norm() / (A * gsv.eigenvectors.col(i)).norm() << endl;
-		////}
-		////cout << "原始GCG迭代次数" << gsv.nIter << endl;
-
-
-		//for (int i = 0; i < LOBPCG.eigenvalues.size(); ++i) {
-		//	cout << "第" << i + 1 << "个特征值：" << LOBPCG.eigenvalues[i] << endl;
-		//	//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
-		//	cout << (A * LOBPCG.eigenvectors.col(i) - LOBPCG.eigenvalues[i] * B * LOBPCG.eigenvectors.col(i)).norm() / (A * LOBPCG.eigenvectors.col(i)).norm() << endl;
-		//}
-		//cout << "LOBPCG迭代次数" << LOBPCG.nIter << endl;
-
-
-		//for (int i = 0; i < jd.eigenvalues.size(); ++i) {
-		//	cout << "第" << i + 1 << "个特征值：" << jd.eigenvalues[i] << endl;
-		//	//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
-		//	cout << (A * jd.eigenvectors.col(i) - jd.eigenvalues[i] * B * jd.eigenvectors.col(i)).norm() / (A * jd.eigenvectors.col(i)).norm() << endl;
-		//}
-		//cout << "JD迭代次数" << jd.nIter << endl;
-
 	}
 }
