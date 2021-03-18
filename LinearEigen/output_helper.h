@@ -14,7 +14,18 @@ using namespace std;
 using namespace Eigen;
 
 int fstream_prepare(fstream& txt, fstream& csv, SparseMatrix<double>& A, string& matrix_name, string& method, string& suff) {
-	string folderPath = "./result/" + matrix_name;
+	string folderPath = "./result/";
+
+	for (int i = 0; i < matrix_name.length(); ++i) {
+		if (matrix_name[i] == '/') {
+			folderPath += matrix_name.substr(0, i);
+			_mkdir(folderPath.c_str());
+			folderPath += '/';
+			matrix_name = matrix_name.substr(i + 1, matrix_name.length() - i - 1);
+			i = -1;
+		}
+	}
+	folderPath += matrix_name;
 	_mkdir(folderPath.c_str());
 
 	//TODO 小数输出格式控制

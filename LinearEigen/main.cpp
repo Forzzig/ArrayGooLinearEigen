@@ -54,31 +54,31 @@ string matrices[1000] =
 	"1138_bus",
 
 	"sym-pos/apache1",
-	"ct20stif",
-	"oilpan",
-	"apache2",
-	"shipsec8",
-	"ship_003",
-	"shipsec5",
-	"crankseg_1",
-	"bmw7st_1",
-	"m_t1",
-	"x104",
-	"hood",
-	"crankseg_2",
-	"pwtk",
-	"bmwcra_1",
-	"msdoor",
-	"StocF-1465",
-	"Fault_639",
-	"Emilia_923",
-	"inline_1",
-	"ldoor",
-	"Hook_1498",
-	"Geo_1438",
-	"Serena",
-	"audikw_1",
-	"Flan_1565"
+	"sym-pos/ct20stif",
+	"sym-pos/oilpan",
+	"sym-pos/apache2",
+	"sym-pos/shipsec8",
+	"sym-pos/ship_003",
+	"sym-pos/shipsec5",
+	"sym-pos/crankseg_1",
+	"sym-pos/bmw7st_1",
+	"sym-pos/m_t1",
+	"sym-pos/x104",
+	"sym-pos/hood",
+	"sym-pos/crankseg_2",
+	"sym-pos/pwtk",
+	"sym-pos/bmwcra_1",
+	"sym-pos/msdoor",
+	"sym-pos/StocF-1465",
+	"sym-pos/Fault_639",
+	"sym-pos/Emilia_923",
+	"sym-pos/inline_1",
+	"sym-pos/ldoor",
+	"sym-pos/Hook_1498",
+	"sym-pos/Geo_1438",
+	"sym-pos/Serena",
+	"sym-pos/audikw_1",
+	"sym-pos/Flan_1565"
 };
 
 int main() {
@@ -104,10 +104,10 @@ int main() {
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
 		
-		int cgrange = floor(log(A.rows() / 1000 + 1) / log(2)) * 10 + 10;
+		int cgrange = floor(log(A.rows() / 1000 + 1) / log(10)) * 6 + 10;
 		int batchrange = 5;
 		int nevrange = 20;
-		int restartrange = floor(log(A.rows() / 1000 + 1) / log(2)) * 5 + 5;
+		int restartrange = floor(log(A.rows() / 1000 + 1) / log(10)) * 5 + 10;
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
@@ -118,12 +118,13 @@ int main() {
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
+				//TODO 适当多一些
+				for (int cgstep = cgrange + 10; cgstep <= cgrange + 30; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -169,12 +170,14 @@ int main() {
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
 				int best_step;
-				for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
+
+				//TODO 适当少一些
+				for (int cgstep = cgrange - 5; cgstep <= cgrange + 15; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
 						break;
 					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
@@ -218,7 +221,7 @@ int main() {
 		fstream_prepare(result, output, A, matrixName, method, suff);
 		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (nev < batch)
 					break;
 				if (A.rows() / nev < 3)
@@ -229,7 +232,8 @@ int main() {
 				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
-					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
+					//TODO 稍多一点点
+					for (int cgstep = cgrange + 5; cgstep <= cgrange + 25; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
@@ -281,7 +285,7 @@ int main() {
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
@@ -290,7 +294,9 @@ int main() {
 				for (int restart = restartrange; restart <= restartrange + 10; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
 						break;
-					for (int gmres_size = cgrange / 2; gmres_size <= cgrange / 2 + 10; gmres_size += 5) {
+
+					//TODO 必须少
+					for (int gmres_size = cgrange / 2; gmres_size <= cgrange / 2 + 20; gmres_size += 10) {
 						if (A.rows() / gmres_size < 2)
 							break;
 						for (int gmres_restart = 1; gmres_restart <= 1; ++gmres_restart) {
@@ -353,7 +359,7 @@ int main() {
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
-			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
+			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (batch > nev)
 					break;
 
@@ -362,7 +368,9 @@ int main() {
 				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
-					for (int cgstep = cgrange; cgstep <= cgrange + 20; cgstep += 10) {
+
+					//TODO 稍多一点点
+					for (int cgstep = cgrange + 5; cgstep <= cgrange + 25; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
