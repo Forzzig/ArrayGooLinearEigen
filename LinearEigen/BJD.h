@@ -5,7 +5,7 @@
 using namespace Eigen;
 class BJD : public LinearEigenSolver {
 public:
-	int restart, gmres_size;
+	int restart, gmres_size, nRestart;
 	MatrixXd V, WA,/* WB, HA, HB, HAB,*/ H;
 	MatrixXd Y, v;
 	SparseMatrix<double> K1, tmpA;

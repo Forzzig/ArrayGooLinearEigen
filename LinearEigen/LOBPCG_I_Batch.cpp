@@ -7,7 +7,8 @@ LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B,
 	X(storage + A.rows() * batch, A.rows(), batch),
 	P(storage + A.rows() * batch * 2, A.rows(), 0),
 	W(storage, A.rows(), batch),
-	batch(batch) {
+	batch(batch),
+	cgstep(cgstep){
 
 	X = MatrixXd::Random(A.rows(), batch);
 	orthogonalization(X, B);
@@ -17,7 +18,6 @@ LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B,
 	linearsolver.compute(A);
 
 	//事先固定CG迭代步数量
-	this->cgstep = cgstep;
 	linearsolver.setMaxIterations(cgstep);
 	cout << "CG求解器准备完成..." << endl;
 	cout << "初始化完成" << endl;
@@ -30,10 +30,6 @@ void LOBPCG_I_Batch::compute() {
 	//所有已计算出来的特征向量和待计算的都依次存在storage里，避免内存拷贝
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
 	while (true) {
-		time_t now = time(&now);
-		if (timeCheck(start_time, now))
-			break;
-
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 
@@ -56,7 +52,6 @@ void LOBPCG_I_Batch::compute() {
 
 		//预存上一步的近似特征向量
 		tmp = X;
-		/*cout << W.cols() << " " << X.cols() << " " << P.cols()<< endl;*/
 
 		new (&V) Map<MatrixXd>(storage, A.rows(), W.cols() + X.cols() + P.cols());
 
@@ -69,23 +64,26 @@ void LOBPCG_I_Batch::compute() {
 
 		//正交化后会有线性相关项，剔除
 		new (&V) Map<MatrixXd>(storage, A.rows(), W.cols() + X.cols() + P.cols() - dep);
-		cout << V.cols() << endl;
 
 		projection_RR(V, A, eval, evec);
 		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
-
-		system("cls");
-		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
 
 		//子空间V投影下的新的近似特征向量
 		int nd = (2 * batch < V.cols()) ? 2 * batch : V.cols();
 		tmpA = V * evec.block(0, 0, V.cols(), nd);
 		com_of_mul += A.rows() * V.cols() * nd;
 
+		system("cls");
 		int prev = eigenvalues.size();
 		int cnv = conv_select(eval, tmpA, 0, eval, tmpA);
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
+		cout << "已收敛特征向量个数：" << cnv << endl;
+		
 		if (cnv >= nev)
+			break;
+
+		time_t now = time(&now);
+		if (timeCheck(start_time, now))
 			break;
 
 		int wid = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();

@@ -1,18 +1,19 @@
 #include<IterRitz.h>
 
-IterRitz::IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) : LinearEigenSolver(A, B, nev){
-	this->q = q;
-	this->r = r;
-	this->cgstep = cgstep;
-	X = MatrixXd::Random(A.rows(), q);
+IterRitz::IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r)
+	: LinearEigenSolver(A, B, nev),
+	q(q),
+	r(r),
+	cgstep(cgstep),
+	X(MatrixXd::Random(A.rows(), q)) {
+	
 	orthogonalization(X, B);
 	MatrixXd evec;
 	projection_RR(X, A, LAM, evec);
-	X = X * evec;
+	X *= evec;
 	linearsolver.compute(A);
 	linearsolver.setMaxIterations(cgstep);
 	cout << "CG求解器准备完成..." << endl;
-	nIter = 0;
 	cout << "初始化完成" << endl;
 }
 
@@ -25,10 +26,6 @@ void IterRitz::compute() {
 	P.resize(A.rows(), 0);
 	Map<MatrixXd> V(&X1(0, 0), A.rows(), 0);
 	while (true) {
-		time_t now = time(&now);
-		if (timeCheck(start_time, now))
-			break;
-
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 		cout << "移频：" << shift << endl;
@@ -94,19 +91,15 @@ void IterRitz::compute() {
 			int dep = orthogonalization(X1.leftCols(q * r), B);
 			new (&V) Map<MatrixXd>(&X1(0, 0), A.rows(), q * r - dep);
 		}
-		cout << V.cols() << endl;
 		projection_RR(V, A, eval, evec);
 		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
 
-		cout << V.rows() << " " << V.cols() << " " << evec.rows() << " " << evec.cols() << endl;
-		
 		Xnew = V * evec;
 		com_of_mul += A.rows() * V.cols() * evec.cols();
 
-		//cout << Xnew << endl;
-		system("cls");
 		P = X;
 		
+		system("cls");
 		cnv = conv_select(eval, Xnew, shift, LAM, X);
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		//system("pause");
@@ -115,6 +108,10 @@ void IterRitz::compute() {
 		if (cnv >= nev) {
 			break;
 		}
+
+		time_t now = time(&now);
+		if (timeCheck(start_time, now))
+			break;
 
 	}
 }

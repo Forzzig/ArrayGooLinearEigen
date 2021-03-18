@@ -51,7 +51,34 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus"
+	"1138_bus",
+
+	"sym-pos/apache1",
+	"ct20stif",
+	"oilpan",
+	"apache2",
+	"shipsec8",
+	"ship_003",
+	"shipsec5",
+	"crankseg_1",
+	"bmw7st_1",
+	"m_t1",
+	"x104",
+	"hood",
+	"crankseg_2",
+	"pwtk",
+	"bmwcra_1",
+	"msdoor",
+	"StocF-1465",
+	"Fault_639",
+	"Emilia_923",
+	"inline_1",
+	"ldoor",
+	"Hook_1498",
+	"Geo_1438",
+	"Serena",
+	"audikw_1",
+	"Flan_1565"
 };
 
 int main() {

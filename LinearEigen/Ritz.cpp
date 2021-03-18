@@ -1,18 +1,19 @@
 #include<Ritz.h>
 
-Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) : LinearEigenSolver(A, B, nev) {
-	this->q = q;
-	this->r = r;
-	this->cgstep = cgstep;
-	X = MatrixXd::Random(A.rows(), q);
+Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r)
+	: LinearEigenSolver(A, B, nev),
+	q(q),
+	r(r),
+	cgstep(cgstep),
+	X(MatrixXd::Random(A.rows(), q)) {
+	
 	orthogonalization(X, B);
 	MatrixXd evec;
 	projection_RR(X, A, LAM, evec);
-	X = X * evec;
+	X *= evec;
 	linearsolver.compute(A);
 	linearsolver.setMaxIterations(cgstep);
 	cout << "CG求解器准备完成..." << endl;
-	nIter = 0;
 	cout << "初始化完成" << endl;
 }
 
@@ -24,10 +25,6 @@ void Ritz::compute() {
 	X1.resize(A.rows(), q * r);
 	P.resize(A.rows(), 0);
 	while (true) {
-		time_t now = time(&now);
-		if (timeCheck(start_time, now))
-			break;
-
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 		cout << "移频：" << shift << endl;
@@ -74,33 +71,24 @@ void Ritz::compute() {
 			com_of_mul += (q + 1) * q * A.rows();
 		}
 		
-		cout << X1.cols() << endl;
 		projection_RR(X1, A, eval, evec);
 		com_of_mul += X1.cols() * A.nonZeros() * X1.cols() + (24 * X1.cols() * X1.cols() * X1.cols());
-
-		cout << X1.rows() << " " << X1.cols() << " " << evec.rows() << " " << evec.cols() << endl;
-		/*orthogonalization(X1, eigenvectors, B);
-		orthogonalization(X1, B);
-		projection_RR(X1, A, eval, evec);
-
-		Xnew = X1 * evec;*/
 
 		Xnew = X1 * evec;
 		com_of_mul += A.rows() * X1.cols() * evec.cols();
 
-		//cout << Xnew << endl;
 		system("cls");
-		/*P = X;*/
-
 		cnv = conv_select(eval, Xnew, shift, LAM, X);
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
-		//system("pause");
 		cout << "已收敛特征向量个数：" << cnv << endl;
-		/*if (cnv > 0)
-			system("pause");*/
+
 		if (cnv >= nev) {
 			break;
 		}
+
+		time_t now = time(&now);
+		if (timeCheck(start_time, now))
+			break;
 
 	}
 }

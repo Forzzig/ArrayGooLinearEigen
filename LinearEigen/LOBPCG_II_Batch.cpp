@@ -7,7 +7,8 @@ LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& 
 	X(storage + A.rows(), A.rows(), batch, OuterStride<>(3 * A.rows())),
 	W(storage, A.rows(), batch, OuterStride<>(3 * A.rows())),
 	P(storage + 2 * A.rows(), A.rows(), 0, OuterStride<>(3 * A.rows())),
-	batch(batch){
+	batch(batch),
+	cgstep(cgstep){
 
 	X = MatrixXd::Random(A.rows(), batch);
 	orthogonalization(X, B);
@@ -17,7 +18,6 @@ LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& 
 	linearsolver.compute(A);
 
 	//事先固定CG迭代步数量
-	this->cgstep = cgstep;
 	linearsolver.setMaxIterations(cgstep);
 	cout << "CG求解器准备完成..." << endl;
 	cout << "初始化完成" << endl;
@@ -29,10 +29,6 @@ void LOBPCG_II_Batch::compute() {
 	MatrixXd eval, evec, tmp, tmpA, mu;
 	Map<MatrixXd> V(storage, A.rows(), 3), v1(storage, 0, 0);
 	while (true) {
-		time_t now = time(&now);
-		if (timeCheck(start_time, now))
-			break;
-
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 
@@ -53,12 +49,8 @@ void LOBPCG_II_Batch::compute() {
 		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
 			cgstep * (A.nonZeros() + 7 * A.rows()));
 
-		/*coutput << "W---------------------------------" << endl << W << endl;
-		coutput << "WXP--------------------------------" << endl << Map<MatrixXd>(storage, A.rows(), nev * 3) << endl;*/
-
 		//预存上一步的近似特征向量
 		tmp = X;
-		/*cout << W.cols() << " " << X.cols() << " " << P.cols()<< endl;*/
 
 		//对每组XPW分别求解RR
 		for (int i = 0; i < X.cols(); ++i) {
@@ -66,10 +58,6 @@ void LOBPCG_II_Batch::compute() {
 				new (&V) Map<MatrixXd>(storage + A.rows() * 3 * i, A.rows(), 2);
 			else
 				new (&V) Map<MatrixXd>(storage + A.rows() * 3 * i, A.rows(), 3);
-
-			/*coutput << "nIter: " << nIter << "---------------------------" << endl;
-			coutput << "i: " << i << "-----------------------------" << endl;
-			coutput << "V--------------------------------" << endl << V << endl;*/
 
 			orthogonalization(V, eigenvectors, B);
 			com_of_mul += V.cols() * eigenvectors.cols() * A.rows() * 2;
@@ -107,6 +95,10 @@ void LOBPCG_II_Batch::compute() {
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 
 		if (cnv >= nev)
+			break;
+
+		time_t now = time(&now);
+		if (timeCheck(start_time, now))
 			break;
 
 		int wid = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();

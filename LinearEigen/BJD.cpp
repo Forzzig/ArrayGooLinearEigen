@@ -1,15 +1,23 @@
 #include<BJD.h>
 
-BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size) : LinearEigenSolver(A, B, nev) {
-	this->restart = restart;
-	this->gmres_size = gmres_size;
-	V.resize(A.rows(), batch * restart);
+BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size) 
+	: LinearEigenSolver(A, B, nev),
+	restart(restart),
+	gmres_size(gmres_size),
+	nRestart(0),
+	cgstep(cgstep),
+	batch(batch),
+	V(A.rows(), batch* restart),
+	WA(A.rows(), batch* restart),
+	H(batch* restart, batch* restart) {
+
 	Map<MatrixXd> V1(&V(0, 0), A.rows(), batch);
 	V1 = MatrixXd::Random(A.rows(), batch);
 	orthogonalization(V1, B);
-	WA.resize(A.rows(), batch * restart);
+	
 	Map<MatrixXd> W1(&WA(0, 0), A.rows(), batch);
 	W1 = A * V1;
+
 	/*WB.resize(A.rows(), batch * restart);
 	Map<MatrixXd> W2(&WB(0, 0), A.rows(), batch);
 	W2 = B * V1;
@@ -19,11 +27,7 @@ BJD::BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, 
 	HB.block(0, 0, batch, batch) = W2.transpose() * W2;
 	HAB.resize(batch * restart, batch * restart);
 	HAB.block(0, 0, batch, batch) = W1.transpose() * W2;*/
-	H.resize(batch * restart, batch * restart);
 	H.block(0, 0, batch, batch) = W1.transpose() * V1;
-	this->cgstep = cgstep;
-	this->batch = batch;
-	eigenvectors.resize(A.rows(), 0);
 }
 
 void BJD::compute() {
@@ -37,18 +41,12 @@ void BJD::compute() {
 	/*long long t1, t2;
 	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
-		time_t now = time(&now);
-		if (timeCheck(start_time, now))
-			break;
-
 		++nIter;
 		int prev = eigenvalues.size();
 		for (int i = 1; i <= restart; ++i) {
 			
-			system("cls");
 			cout << "第" << nIter - 1 << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
-			cout << Vj.cols() << endl;
 			//t1 = clock();
 
 			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), HAB.block(0, 0, Vj.cols(), Vj.cols()), 0, eval, evec);
@@ -70,26 +68,22 @@ void BJD::compute() {
 
 			ri -= A * ui;
 			com_of_mul += A.nonZeros() * ui.cols();
-			
-			/*coutput << "V--------------------------------" << endl << Vj << endl;
-			coutput << "WA--------------------------------" << endl << WAj << endl;
-			coutput << "WB--------------------------------" << endl << WBj << endl;
-			coutput << "HA--------------------------------" << endl << HA.block(0, 0, Vj.cols(), Vj.cols()) << endl;
-			coutput << "HB--------------------------------" << endl << HB.block(0, 0, Vj.cols(), Vj.cols()) << endl;
-			coutput << "HAB--------------------------------" << endl << HAB.block(0, 0, Vj.cols(), Vj.cols()) << endl;
-			coutput << "H--------------------------------" << endl << H.block(0, 0, Vj.cols(), Vj.cols()) << endl;
-			coutput << "eval--------------------------------" << endl << eval << endl;
-			coutput << "evec--------------------------------" << endl << evec << endl;
-			coutput << "ui--------------------------------" << endl << ui << endl;*/
 
+			system("cls");
 			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
 			com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
+			cout << "已收敛特征向量个数：" << cnv << endl;
 
 			//t1 = clock();
 			//tCnv += t1 - t2;
 
 			if (cnv > prev)
 				break;
+
+			time_t now = time(&now);
+			if (timeCheck(start_time, now))
+				break;
+
 			if (i == restart)
 				break;
 
@@ -110,25 +104,19 @@ void BJD::compute() {
 			//t2 = clock();
 			//tGMR += t2 - t1;
 
-			//cout << X << endl << endl;
 			orthogonalization(X, eigenvectors, B);
 			com_of_mul += X.cols() * eigenvectors.cols() * A.rows() * 2;
 
-			//cout << X << endl << endl;
-			//cout << Vj << endl << endl;
 			orthogonalization(X, Vj, B);
 			com_of_mul += X.cols() * Vj.cols() * A.rows() * 2;
 
-			//cout << X << endl << endl;
 			int dep = orthogonalization(X, B);
 			com_of_mul += (X.cols() + 1) * X.cols() * A.rows();
 
-			//cout << X << endl << endl;
 			//t1 = clock();
 			//tOrt += t1 - t2;
 
 			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols() - dep);
-			/*cout << X << endl<< endl;*/
 			Map<MatrixXd> tmpWA(&WA(0, Vj.cols()), A.rows(), X.cols());
 			tmpWA = A * X;
 			com_of_mul += A.nonZeros() * X.cols();
@@ -138,8 +126,6 @@ void BJD::compute() {
 
 			/*Map<MatrixXd> tmpWB(&WB(0, Vj.cols()), A.rows(), X.cols());
 			tmpWB = B * X;*/
-
-			/*cout << tmpW << endl;*/
 
 			/*HA.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WAj;
 			HA.block(0, Vj.cols(), Vj.cols(), X.cols()) = HA.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
@@ -162,10 +148,6 @@ void BJD::compute() {
 			new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), WAj.cols() + X.cols());
 			/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), WBj.cols() + X.cols());*/
 
-			/*cout << Vj << endl;
-			cout << Vj.transpose() * B * Vj << endl;
-			cout << Vj.transpose() * A * Vj << endl;
-			cout << H.block(0, 0, Vj.cols(), Vj.cols()) << endl;*/
 		}
 		if (eigenvalues.size() >= nev)
 			break;
