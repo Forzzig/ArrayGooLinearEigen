@@ -41,11 +41,12 @@ void BJD::compute() {
 	/*long long t1, t2;
 	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
-		++nIter;
+		++nRestart;
 		int prev = eigenvalues.size();
 		for (int i = 1; i <= restart; ++i) {
 			
-			cout << "第" << nIter - 1 << "轮重启：" << endl;
+			++nIter;
+			cout << "第" << nRestart << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
 			//t1 = clock();
 

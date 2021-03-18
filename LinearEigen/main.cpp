@@ -114,6 +114,7 @@ int main() {
 #ifdef mLOBPCG_I
 		method = "LOBPCG_I";
 		fstream_prepare(result, output, A, matrixName, method, suff);
+		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -164,6 +165,7 @@ int main() {
 #ifdef mLOBPCG_II
 		method = "LOBPCG_II";
 		fstream_prepare(result, output, A, matrixName, method, suff);
+		output << "nev, batch, cgstep, iter, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -214,6 +216,7 @@ int main() {
 #ifdef miRitz
 		method = "IterRitz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
+		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			for (int batch = batchrange; batch <= batchrange + 15; batch += 5) {
 				if (nev < batch)
@@ -274,6 +277,7 @@ int main() {
 #ifdef mBJD
 		method = "BJD";
 		fstream_prepare(result, output, A, matrixName, method, suff);
+		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, nRestart, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -289,7 +293,7 @@ int main() {
 					for (int gmres_size = cgrange / 2; gmres_size <= cgrange / 2 + 10; gmres_size += 5) {
 						if (A.rows() / gmres_size < 2)
 							break;
-						for (int gmres_restart = 1; gmres_restart <= 2; ++gmres_restart) {
+						for (int gmres_restart = 1; gmres_restart <= 1; ++gmres_restart) {
 							//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
 							result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << 
 								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
@@ -304,6 +308,7 @@ int main() {
 								//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
 								result << "相对误差：" << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
 							}
+							result << "块J-D重启轮数" << bjd.nRestart << endl;
 							result << "块J-D迭代次数" << bjd.nIter << endl;
 							result << "块J-D乘法次数" << bjd.com_of_mul << endl << endl;
 							if (bjd.com_of_mul < best) {
@@ -313,7 +318,7 @@ int main() {
 								best_restart = restart;
 							}
 							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
-								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.com_of_mul << endl;
+								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.nRestart << ", " << bjd.com_of_mul << endl;
 							time_t now = time(&now);
 							if (totalTimeCheck(current, now))
 								break;
@@ -344,6 +349,7 @@ int main() {
 #ifdef mRitz
 		method = "Ritz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
+		output << "nev, batch, r, cgstep, iter, multi" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;

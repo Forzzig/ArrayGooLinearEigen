@@ -32,7 +32,6 @@ int fstream_prepare(fstream& txt, fstream& csv, SparseMatrix<double>& A, string&
 
 	csv.open(folderPath + "/" + matrix_name + "-" + method + "-statistics" + suff + ".csv", ios::out | ios::app);
 	csv << endl << buff;
-	csv << "nev, batch, cgstep, iter, multi" << endl;
 	return 0;
 }
 
