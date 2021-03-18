@@ -342,3 +342,4 @@ healthchecksdb
 /LinearEigen/Eigen/out/build/x64-Debug (默认值)/CMakeFiles/ShowIncludes
 /LinearEigen/*.txt
 /LinearEigen/result/*.txt
+/LinearEigen/matrix/*.mtx
