@@ -153,6 +153,10 @@ void BJD::compute() {
 		if (eigenvalues.size() >= nev)
 			break;
 		
+		time_t now = time(&now);
+		if (timeCheck(start_time, now))
+			break;
+
 		int left = nd - (eigenvalues.size() - prev);
 		nd = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
 		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);

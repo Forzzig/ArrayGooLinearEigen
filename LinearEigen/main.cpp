@@ -22,8 +22,8 @@ fstream result;
 
 //求解器列表
 //#define mLOBPCG_I
-#define mLOBPCG_II
-//#define miRitz
+//#define mLOBPCG_II
+#define miRitz
 //#define mBJD
 //#define mRitz
 
