@@ -31,7 +31,7 @@ public:
 	void projection_RR(Derived& V, SparseMatrix<double>& A, MatrixXd& eigenvalues, MatrixXd& eigenvectors);
 	
 	template<typename Derived>
-	void RR(Derived& A, MatrixXd& eigenvalues, MatrixXd& eigenvectors);
+	void RR(Derived& H, MatrixXd& eigenvalues, MatrixXd& eigenvectors);
 	
 	template<typename Derived>
 	int normalize(Derived& v, SparseMatrix<double>& B);
@@ -52,17 +52,19 @@ public:
 template<typename Derived>
 void LinearEigenSolver::projection_RR(Derived& V, SparseMatrix<double>& A, MatrixXd& eigenvalues, MatrixXd& eigenvectors) {
 	MatrixXd tmpA = V.transpose() * A * V;
+	com_of_mul += A.nonZeros() * V.cols() + V.cols() * A.rows() * V.cols();
 	eigensolver.compute(tmpA);
 	eigenvalues = eigensolver.eigenvalues();
 	eigenvectors = eigensolver.eigenvectors();
+	com_of_mul += 24 * V.cols() * V.cols() * V.cols();
 }
 
 template<typename Derived>
-void LinearEigenSolver::RR(Derived& A, MatrixXd& eigenvalues, MatrixXd& eigenvectors) {
-	eigensolver.compute(A);
+void LinearEigenSolver::RR(Derived& H, MatrixXd& eigenvalues, MatrixXd& eigenvectors) {
+	eigensolver.compute(H);
 	eigenvalues = eigensolver.eigenvalues();
 	eigenvectors = eigensolver.eigenvectors();
-	com_of_mul += 24 * A.cols() * A.cols() * A.cols();
+	com_of_mul += 24 * H.cols() * H.cols() * H.cols();
 }
 
 template<typename Derived>
@@ -140,7 +142,9 @@ int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double 
 			}
 		}
 		cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，未收敛" << endl;
-		vecout.col(goon) = evec.col(i);
+		//vecout与evec可能相同
+		if (&vecout(0, goon) != &evec(0, i))
+			vecout.col(goon) = evec.col(i);
 		valout(goon, 0) = eval(i, 0) - shift;
 		++goon;
 		--flag;

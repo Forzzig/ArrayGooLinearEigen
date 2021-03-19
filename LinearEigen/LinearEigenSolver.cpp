@@ -6,7 +6,7 @@ using namespace std;
 double LinearEigenSolver::ORTH_TOL = 1e-10;
 double LinearEigenSolver::EIGTOL = 1e-3;
 int LinearEigenSolver::CHECKNUM = 1;
-fstream LinearEigenSolver::coutput("coutput.txt");
+fstream LinearEigenSolver::coutput("coutput.txt", ios::out);
 
 LinearEigenSolver::LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev) 
 	: A(A),

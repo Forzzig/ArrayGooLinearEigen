@@ -9,7 +9,7 @@ public:
 	int cgstep, batch;
 	double* storage = NULL;
 	Map<MatrixXd, Unaligned, OuterStride<>> X, P, W;
-	MatrixXd LAM;
+	MatrixXd Lam;
 	LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch);
 	void compute();
 };
