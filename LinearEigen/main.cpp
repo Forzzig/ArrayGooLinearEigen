@@ -22,10 +22,10 @@ fstream result;
 
 //求解器列表
 #define mLOBPCG_I
-#define mLOBPCG_II
-#define miRitz
-#define mBJD
-#define mRitz
+//#define mLOBPCG_II
+//#define miRitz
+//#define mBJD
+//#define mRitz
 
 //特殊后缀
 string suff = "";
@@ -34,51 +34,51 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{ "bcsstk01",
+{ /*"bcsstk01",*/
 	"bcsstk02",
-	"bcsstk05",
-	"bcsstk07",
-	"bcsstk08",
-	"bcsstk09",
-	"bcsstk10",
-	"bcsstk12",
-	"bcsstk13",
-	"bcsstk15",
-	"bcsstk16",
-	"bcsstk17",
-	"bcsstk18",
-	"bcsstk19",
-	"bwm2000",
-	"fidapm29",
-	"s3rmt3m3",
-	"1138_bus",
+	//"bcsstk05",
+	//"bcsstk07",
+	//"bcsstk08",
+	//"bcsstk09",
+	//"bcsstk10",
+	//"bcsstk12",
+	//"bcsstk13",
+	//"bcsstk15",
+	//"bcsstk16",
+	//"bcsstk17",
+	//"bcsstk18",
+	//"bcsstk19",
+	//"bwm2000",
+	//"fidapm29",
+	//"s3rmt3m3",
+	//"1138_bus",
 
-	"sym-pos/apache1",
-	"sym-pos/ct20stif",
-	"sym-pos/oilpan",
-	"sym-pos/apache2",
-	"sym-pos/shipsec8",
-	"sym-pos/ship_003",
-	"sym-pos/shipsec5",
-	"sym-pos/crankseg_1",
-	"sym-pos/bmw7st_1",
-	"sym-pos/m_t1",
-	"sym-pos/x104",
-	"sym-pos/hood",
-	"sym-pos/crankseg_2",
-	"sym-pos/pwtk",
-	"sym-pos/bmwcra_1",
-	"sym-pos/msdoor",
-	"sym-pos/StocF-1465",
-	"sym-pos/Fault_639",
-	"sym-pos/Emilia_923",
-	"sym-pos/inline_1",
-	"sym-pos/ldoor",
-	"sym-pos/Hook_1498",
-	"sym-pos/Geo_1438",
-	"sym-pos/Serena",
-	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"
+	//"sym-pos/apache1",
+	//"sym-pos/ct20stif",
+	//"sym-pos/oilpan",
+	//"sym-pos/apache2",
+	//"sym-pos/shipsec8",
+	//"sym-pos/ship_003",
+	//"sym-pos/shipsec5",
+	//"sym-pos/crankseg_1",
+	//"sym-pos/bmw7st_1",
+	//"sym-pos/m_t1",
+	//"sym-pos/x104",
+	//"sym-pos/hood",
+	//"sym-pos/crankseg_2",
+	//"sym-pos/pwtk",
+	//"sym-pos/bmwcra_1",
+	//"sym-pos/msdoor",
+	//"sym-pos/StocF-1465",
+	//"sym-pos/Fault_639",
+	//"sym-pos/Emilia_923",
+	//"sym-pos/inline_1",
+	//"sym-pos/ldoor",
+	//"sym-pos/Hook_1498",
+	//"sym-pos/Geo_1438",
+	//"sym-pos/Serena",
+	//"sym-pos/audikw_1",
+	//"sym-pos/Flan_1565"
 };
 
 int main() {

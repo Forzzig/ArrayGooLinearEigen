@@ -8,8 +8,9 @@ class LOBPCG_I_Batch : public LinearEigenSolver {
 public:
 	int cgstep, batch;
 	double* storage = NULL;
-	Map<MatrixXd> X, P, W;
-	MatrixXd LAM;
+	double* AVstorage = NULL;
+	Map<MatrixXd> X, P, W, AX, AP, AW;
+	MatrixXd H;
 	LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch);
 	void compute();
 };

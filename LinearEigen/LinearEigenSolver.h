@@ -40,13 +40,11 @@ public:
 	int orthogonalization(Derived& V, SparseMatrix<double>& B);
 	
 	template<typename Derived1, typename Derived2>
-	int orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double>& B);
+	void orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double>& B);
 
 	template<typename Derived_val, typename Derived_vec, typename Out_val, typename Out_vec>
 	int conv_select(Derived_val& eval, Derived_vec& evec, double shift, Out_val& valout, Out_vec& vecout);
-	
-	template<typename Derived_val, typename Derived_vec>
-	vector<int> conv_check(Derived_val& eval, Derived_vec& evec, double shift);
+
 	LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev);
 	virtual void compute() = 0;
 };
@@ -64,12 +62,13 @@ void LinearEigenSolver::RR(Derived& A, MatrixXd& eigenvalues, MatrixXd& eigenvec
 	eigensolver.compute(A);
 	eigenvalues = eigensolver.eigenvalues();
 	eigenvectors = eigensolver.eigenvectors();
+	com_of_mul += 24 * A.cols() * A.cols() * A.cols();
 }
 
 template<typename Derived>
 int LinearEigenSolver::normalize(Derived& v, SparseMatrix<double>& B) {
-	MatrixXd tmp = v.transpose() * B * v;
-	double r = sqrt(tmp(0, 0));
+	double r = sqrt((v.transpose() * B * v)(0, 0));
+	com_of_mul += B.nonZeros() + B.rows();
 	if (r < LinearEigenSolver::ORTH_TOL) {
 		return 1;
 	}
@@ -79,123 +78,78 @@ int LinearEigenSolver::normalize(Derived& v, SparseMatrix<double>& B) {
 
 template<typename Derived>
 int LinearEigenSolver::orthogonalization(Derived& V, SparseMatrix<double>& B) {
-	MatrixXd tmpvi;
-	MatrixXd tmp;
-	int dep = 0;
-	for (int i = 0; i < V.cols() - dep; ++i) {
-		int flag = normalize(V.block(0, i, V.rows(), 1), B);
-		if (flag) {
-			V.col(i) = V.col(V.cols() - 1 - dep);
-			++dep;
-			--i;
-			continue;
-		}
-		tmpvi = V.col(i).transpose();
-		for (int j = i + 1; j < V.cols() - dep; ++j) {
-			tmp = tmpvi * B * V.col(j);
-			V.col(j) -= tmp(0, 0) * V.col(i);
+	vector<int> pos;
+	MatrixXd tmpv;
+	for (int i = 0; i < V.cols(); ++i) {
+		int flag = normalize(V.col(i), B);
+		if (!flag) {
+			tmpv = (B * V.col(i)).transpose();
+			com_of_mul += B.nonZeros();
+			for (int j = i + 1; j < V.cols(); ++j) {
+				double tmp = (tmpv * V.col(j))(0, 0);
+				V.col(j) -= tmp * V.col(i);
+			}
+			com_of_mul += 2 * V.rows() * (V.cols() - 1 - i);
+			pos.push_back(i);
 		}
 	}
-	return dep;
+	for (int i = 0; i < pos.size(); ++i)
+		if (i != pos[i])
+			V.col(i) = V.col(pos[i]);
+	return V.cols() - pos.size();
 }
 
 template<typename Derived1, typename Derived2>
-int LinearEigenSolver::orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double>& B) {
-	MatrixXd tmpvi;
-	MatrixXd tmp;
-	int dep = 0;
+void LinearEigenSolver::orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double>& B) {
+	MatrixXd tmpv;
 	for (int i = 0; i < V2.cols(); ++i) {
-		tmpvi = V2.col(i).transpose();
+		tmpv = (B * V2.col(i)).transpose();
 		for (int j = 0; j < V1.cols(); ++j) {
-			tmp = tmpvi * B * V1.col(j);
-			V1.col(j) -= tmp(0, 0) * V2.col(i);
+			double tmp = (tmpv * V1.col(j))(0, 0);
+			V1.col(j) -= tmp * V2.col(i);
 		}
-		//cout << V1.col(0) << endl;
+		com_of_mul += B.nonZeros() + 2 * V2.rows() * V1.cols();
 	}
-	for (int j = 0; j < V1.cols() - dep; ++j) {
-		int flag = normalize(V1.block(0, j, V1.rows(), 1), B);
-		if (flag) {
-			V1.col(j) = V1.col(V1.cols() - 1 - dep);
-			++dep;
-			--j;
-		}
-	}
-	return dep;
 }
 
 template<typename Derived_val, typename Derived_vec, typename Out_val, typename Out_vec>
 int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double shift, Out_val& valout, Out_vec& vecout) {
-	MatrixXd tmp1, tmp2;
+	MatrixXd tmp, tmpA, tmpB, eig(evec.rows(), evec.cols());
 	int flag = LinearEigenSolver::CHECKNUM;
-	vector<int> hitpos;
-	vector<int> goonpos;
-	vector<double> ans;
-	for (int i = 0; i < evec.cols(); ++i) {
-		tmp1 = A * evec.col(i);
-		tmp2 = B * evec.col(i) * (eval(i, 0) - shift) - tmp1;
-		double tmp = tmp2.col(0).norm() / tmp1.col(0).norm();
-		ans.push_back(tmp);
-	}
 	int prev = eigenvectors.cols();
+	int goon = 0;
+	int cnv = 0;
 	for (int i = 0; i < evec.cols(); ++i) {
-		if ((ans[i] >= EIGTOL) || (flag <= 0) || (prev + hitpos.size() >= nev)) {
-			cout << "检查第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
-			cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			goonpos.push_back(i);
-			if (goonpos.size() == vecout.cols())
-				break;
-			--flag;
-		}
-		else {
-			cout << "第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
-			cout << "第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			cout << "收敛！" << endl;
-			hitpos.push_back(i);
-		}
-	}
-	eigenvectors.conservativeResize(evec.rows(), min(nev, (int)(prev + hitpos.size())));
-	for (int i = 0; i < hitpos.size(); ++i) {
-		if (eigenvalues.size() == nev)
-			break;
-		eigenvalues.push_back(eval(hitpos[i], 0) - shift);
-		eigenvectors.col(prev + i) = evec.col(hitpos[i]);
-	}
-	for (int i = 0; i < goonpos.size(); ++i) {
-		vecout.col(i) = evec.col(goonpos[i]);
-		valout(i, 0) = eval(goonpos[i], 0) - shift;
-	}
-	return eigenvalues.size();
-}
+		if (flag > 0) {
+			tmpA = A * evec.col(i);
+			tmpB = B * evec.col(i);
+			tmp = tmpB * (eval(i, 0) - shift) - tmpA;
+			double err = tmp.col(0).norm() / tmpA.norm();
 
-template<typename Derived_val, typename Derived_vec>
-vector<int> LinearEigenSolver::conv_check(Derived_val& eval, Derived_vec& evec, double shift) {
-	MatrixXd tmp1, tmp2;
-	int flag = LinearEigenSolver::CHECKNUM;
-	vector<int> hitpos;
-	vector<double> ans;
-	for (int i = 0; i < evec.cols(); ++i) {
-		tmp1 = A * evec.col(i);
-		tmp2 = B * evec.col(i) * (eval(i, 0) - shift) - tmp1;
-		double tmp = tmp2.col(0).norm() / tmp1.col(0).norm();
-		ans.push_back(tmp);
-	}
-	int prev = eigenvectors.cols();
-	for (int i = 0; i < evec.cols(); ++i) {
-		if ((ans[i] >= EIGTOL) || (prev + hitpos.size() >= nev)) {
-			cout << "检查第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
-			cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			--flag;
-			if (flag <= 0)
-				break;
+			com_of_mul += A.nonZeros() + B.nonZeros() + 3 * A.rows();
+
+			if (err < EIGTOL) {
+				cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，相对误差：" << err << endl;
+				cout << "达到收敛条件！" << endl;
+				eigenvalues.push_back(eval(i, 0) - shift);
+				eig.col(cnv) = evec.col(i);
+				++cnv;
+				if (prev + cnv >= nev)
+					break;
+				continue;
+			}
 		}
-		else {
-			cout << "第" << i + 1 << "个特征向量相对误差：" << ans[i] << endl;
-			cout << "第" << i + 1 << "个特征值：" << eval(i, 0) - shift << endl;
-			cout << "收敛！" << endl;
-			hitpos.push_back(i);
-		}
+		cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，未收敛" << endl;
+		vecout.col(goon) = evec.col(i);
+		valout(goon, 0) = eval(i, 0) - shift;
+		++goon;
+		--flag;
+		if (goon >= vecout.cols())
+			break;
 	}
-	return hitpos;
+	eigenvectors.conservativeResize(evec.rows(), prev + cnv);
+	eigenvectors.rightCols(cnv) = eig.leftCols(cnv);
+	return eigenvalues.size();
 }
 
 #endif

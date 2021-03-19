@@ -3,15 +3,25 @@
 using namespace std;
 LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch)
 	: LinearEigenSolver(A, B, nev),
-	storage(new double[A.rows() * nev * 3]),
-	X(storage + A.rows() * batch, A.rows(), batch),
+	//摆放顺序：XWP
+	storage(new double[A.rows() * batch * 3]),
+	X(storage, A.rows(), batch),
+	W(storage + A.rows() * batch, A.rows(), batch),
 	P(storage + A.rows() * batch * 2, A.rows(), 0),
-	W(storage, A.rows(), batch),
+
+	AVstorage(new double[A.rows() * batch * 3]),
+	AX(AVstorage, A.rows(), batch),
+	AW(AVstorage + A.rows() * batch, A.rows(), batch),
+	AP(AVstorage + A.rows() * batch * 2, A.rows(), 0),
+	
+	H(batch * 3, batch * 3), 
 	batch(batch),
 	cgstep(cgstep){
 
 	X = MatrixXd::Random(A.rows(), batch);
 	orthogonalization(X, B);
+	AX = A * X;
+	H.block(0, 0, batch, batch) = X.transpose() * AX;
 	cout << "X初始化" << endl;
 
 	//TODO 只有要求解的矩阵不变时才能在这初始化
@@ -25,60 +35,74 @@ LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B,
 
 
 void LOBPCG_I_Batch::compute() {
-	MatrixXd eval, evec, tmp, tmpA, mu, vl;
+	MatrixXd eval, evec, tmp, Xnew;
 
 	//所有已计算出来的特征向量和待计算的都依次存在storage里，避免内存拷贝
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
+	Map<MatrixXd> WP(storage + A.rows() * X.cols(), A.rows(), W.cols());
+	Map<MatrixXd> AV(AVstorage, A.rows(), X.cols() + W.cols());
+	Map<MatrixXd> AWP(AVstorage + A.rows() * X.cols(), A.rows(), W.cols());
 	while (true) {
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 
-		tmpA = A * X;
-		com_of_mul += A.nonZeros() * X.cols();
-
 		tmp = B * X;
-		com_of_mul += B.nonZeros() * X.cols();
+		com_of_mul += B.nonZeros();
 
 		for (int i = 0; i < X.cols(); ++i) {
-			mu = X.col(i).transpose() * tmpA.col(i);
-			tmp.col(i) *= mu(0, 0);
+			tmp.col(i) *= H(i, i);
 		}
-		com_of_mul += (X.cols() + 1) * A.rows() * X.cols();
+		com_of_mul += A.rows() * X.cols();
 
 		//求解 A*W = A*X - mu*B*X， X为上一步的近似特征向量
-		W = linearsolver.solve(tmpA - tmp);
+		W = linearsolver.solve(AX - tmp);
 		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
 			cgstep * (A.nonZeros() + 7 * A.rows()));
 
 		//预存上一步的近似特征向量
 		tmp = X;
 
-		new (&V) Map<MatrixXd>(storage, A.rows(), W.cols() + X.cols() + P.cols());
-
-		//全体做正交化，如果分块容易出问题
-		orthogonalization(V, eigenvectors, B);
-		com_of_mul += V.cols() * eigenvectors.cols() * A.rows() * 2;
-
-		int dep = orthogonalization(V, B);
-		com_of_mul += (V.cols() + 1) * V.cols() * A.rows();
+		new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols());
+		orthogonalization(WP, eigenvectors, B);
+		orthogonalization(WP, X, B);
+		
+		int dep = orthogonalization(WP, B);
 
 		//正交化后会有线性相关项，剔除
-		new (&V) Map<MatrixXd>(storage, A.rows(), W.cols() + X.cols() + P.cols() - dep);
+		new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols() - dep);
+		new (&AWP) Map<MatrixXd>(AVstorage + A.rows() * X.cols(), A.rows(), WP.cols());
+		AWP = A * WP;
+		com_of_mul += A.nonZeros() * WP.cols();
 
-		projection_RR(V, A, eval, evec);
-		com_of_mul += V.cols() * A.nonZeros() * V.cols() + (24 * V.cols() * V.cols() * V.cols());
+		H.block(0, X.cols(), X.cols(), WP.cols()) = X.transpose() * AWP;
+		H.block(X.cols(), 0, WP.cols(), X.cols()) = H.block(0, X.cols(), X.cols(), WP.cols()).transpose();
+		com_of_mul += X.cols() * A.rows() * WP.cols();
+
+		H.block(X.cols(), X.cols(), WP.cols(), WP.cols()) = WP.transpose() * AWP;
+		com_of_mul += WP.cols() * A.rows() * WP.cols();
+
+		new (&V) Map<MatrixXd>(storage, A.rows(), X.cols() + WP.cols());
+
+		/*coutput << "V--------------------------" << endl << V << endl;
+		coutput << "H--------------------------------" << endl << H << endl;
+		coutput << "VT*AV----------------------------" << endl << V.transpose() * A * V << endl;
+
+		coutput << "VT*BV---------------------------" << endl << V.transpose() * B * V << endl;*/
+
+		RR(H.block(0, 0, V.cols(), V.cols()), eval, evec);
 
 		//子空间V投影下的新的近似特征向量
 		int nd = (2 * batch < V.cols()) ? 2 * batch : V.cols();
-		tmpA = V * evec.block(0, 0, V.cols(), nd);
+		Xnew = V * evec.block(0, 0, V.cols(), nd);
 		com_of_mul += A.rows() * V.cols() * nd;
 
 		system("cls");
 		int prev = eigenvalues.size();
-		int cnv = conv_select(eval, tmpA, 0, eval, tmpA);
-		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
+		int cnv = conv_select(eval, Xnew, 0, eval, X);
 		cout << "已收敛特征向量个数：" << cnv << endl;
-		
+
+		system("pause");
+
 		if (cnv >= nev)
 			break;
 
@@ -86,12 +110,22 @@ void LOBPCG_I_Batch::compute() {
 		if (timeCheck(start_time, now))
 			break;
 
-		int wid = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
-		new (&W) Map<MatrixXd>(storage, A.rows(), wid);
-		new (&X) Map<MatrixXd>(storage + A.rows() * wid, A.rows(), wid);
-		new (&P) Map<MatrixXd>(storage + A.rows() * wid * 2, A.rows(), tmp.cols());
-		
-		X = tmpA.leftCols(wid);
+		if (nd - (cnv - prev) < X.cols()) {
+			int wid = nd - (cnv - prev);
+			new (&X) Map<MatrixXd>(storage, A.rows(), wid);
+			new (&AX) Map<MatrixXd>(AVstorage, A.rows(), wid);
+			new (&W) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), wid);
+		}
+		orthogonalization(X, eigenvectors, B);
+		orthogonalization(X, B);
+
+		AX = A * X;
+		com_of_mul += A.nonZeros() * X.cols();
+
+		H.block(0, 0, X.cols(), X.cols()) = X.transpose() * AX;
+		com_of_mul += X.cols() * A.rows() * X.cols();
+
+		new (&P) Map<MatrixXd>(storage + A.rows() * (X.cols() + W.cols()), A.rows(), tmp.cols());
 		P = tmp;
 	}
 }
