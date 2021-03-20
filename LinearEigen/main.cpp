@@ -125,7 +125,7 @@ int main() {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
-				int best_step;
+				int best_step = -1;
 				//TODO 适当多一些
 				for (int cgstep = cgrange + 10; cgstep <= cgrange + 30; cgstep += 10) {
 					if (A.rows() / cgstep < 2)
@@ -177,7 +177,7 @@ int main() {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
-				int best_step;
+				int best_step = -1;
 
 				//TODO 适当少一些
 				for (int cgstep = cgrange - 5; cgstep <= cgrange + 15; cgstep += 10) {
@@ -231,7 +231,7 @@ int main() {
 					break;
 
 				long long best = LLONG_MAX;
-				int best_r, best_step;
+				int best_r = -1, best_step = -1;
 				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
@@ -292,7 +292,7 @@ int main() {
 				if (batch > nev)
 					break;
 				long long best = LLONG_MAX;
-				int best_gmres_size, best_gmres_restart, best_restart;
+				int best_gmres_size = -1, best_gmres_restart = -1, best_restart = -1;
 
 				for (int restart = restartrange; restart <= restartrange + 10; restart += 5) {
 					if (A.rows() / (batch * restart) < 2)
@@ -367,7 +367,7 @@ int main() {
 					break;
 
 				long long best = LLONG_MAX;
-				int best_r, best_step;
+				int best_r = -1, best_step = -1;
 				for (int r = 2; r <= 4; ++r) {
 					if (A.rows() / (batch * r) < 2)
 						break;
