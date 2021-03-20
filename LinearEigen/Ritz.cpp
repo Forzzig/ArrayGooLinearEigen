@@ -100,4 +100,5 @@ void Ritz::compute() {
 		if (timeCheck(start_time, now))
 			break;
 	}
+	finish();
 }

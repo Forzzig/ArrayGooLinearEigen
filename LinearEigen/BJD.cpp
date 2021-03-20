@@ -166,4 +166,5 @@ void BJD::compute() {
 	/*cout << "RR   , Cnv   , GMR   , Ort   , AX   , H" << endl;
 	cout << tRR << ", " << tCnv << ", " << tGMR << ", " << tOrt << ", " << tAX << ", " << tH << endl;
 	system("pause");*/
+	finish();
 }

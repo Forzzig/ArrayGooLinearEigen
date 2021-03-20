@@ -119,4 +119,5 @@ void IterRitz::compute() {
 		orthogonalization(X, eigenvectors, B);
 		orthogonalization(X, B);
 	}
+	finish();
 }

@@ -17,7 +17,7 @@ public:
 	static int CHECKNUM;
 	static fstream coutput;
 	int nIter;
-	time_t start_time;
+	time_t start_time, end_time;
 	long long com_of_mul;
 	SparseMatrix<double>& A;
 	SparseMatrix<double>& B;
@@ -47,6 +47,10 @@ public:
 
 	LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev);
 	virtual void compute() = 0;
+
+	void finish() {
+		end_time = time(NULL);
+	}
 };
 
 template<typename Derived>

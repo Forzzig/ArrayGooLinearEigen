@@ -109,4 +109,5 @@ void LOBPCG_I_Batch::compute() {
 		new (&P) Map<MatrixXd>(storage + A.rows() * (X.cols() + W.cols()), A.rows(), tmp.cols());
 		P = tmp;
 	}
+	finish();
 }

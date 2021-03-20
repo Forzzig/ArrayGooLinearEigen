@@ -117,7 +117,7 @@ int main() {
 #ifdef mLOBPCG_I
 		method = "LOBPCG_I";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, cgstep, iter, multi" << endl;
+		output << "nev, batch, cgstep, iter, multi, time" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -142,12 +142,13 @@ int main() {
 						result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
 					}
 					result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
-					result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl << endl;
+					result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl;
+					result << "LOBPCG_I计算时间：" << LP1.end_time - LP1.start_time << "秒" << endl << endl;
 					if (LP1.com_of_mul < best) {
 						best = LP1.com_of_mul;
 						best_step = cgstep;
 					}
-					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << endl;
+					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << ", " << LP1.end_time - LP1.start_time << endl;
 					time_t now = time(&now);
 					if (totalTimeCheck(current, now))
 						break;
@@ -169,7 +170,7 @@ int main() {
 #ifdef mLOBPCG_II
 		method = "LOBPCG_II";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, cgstep, iter, multi" << endl;
+		output << "nev, batch, cgstep, iter, multi, time" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -195,12 +196,13 @@ int main() {
 						result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
 					}
 					result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
-					result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl << endl;
+					result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl;
+					result << "LOBPCG_II计算时间：" << LP2.end_time - LP2.start_time << "秒" << endl << endl;
 					if (LP2.com_of_mul < best) {
 						best = LP2.com_of_mul;
 						best_step = cgstep;
 					}
-					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << endl;
+					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << ", " << LP2.end_time - LP2.start_time << endl;
 					time_t now = time(&now);
 					if (totalTimeCheck(current, now))
 						break;
@@ -222,7 +224,7 @@ int main() {
 #ifdef miRitz
 		method = "IterRitz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, r, cgstep, iter, multi" << endl;
+		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
 				if (nev < batch)
@@ -251,13 +253,14 @@ int main() {
 							result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
 						}
 						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
-						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl << endl;
+						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
+						result << "改进Ritz法计算时间：" << iritz.end_time - iritz.start_time << "秒" << endl << endl;
 						if (iritz.com_of_mul < best) {
 							best = iritz.com_of_mul;
 							best_r = r;
 							best_step = cgstep;
 						}
-						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << endl;
+						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << ", " << iritz.end_time - iritz.start_time << endl;
 						time_t now = time(&now);
 						if (totalTimeCheck(current, now))
 							break;
@@ -284,7 +287,7 @@ int main() {
 #ifdef mBJD
 		method = "BJD";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, nRestart, multi" << endl;
+		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, nRestart, multi, time" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -309,7 +312,6 @@ int main() {
 							cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl <<
 								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
 							BJD bjd(A, B, nev, gmres_size * gmres_restart, restart, batch, gmres_size);
-							//L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m)
 							bjd.compute();
 
 							for (int i = 0; i < bjd.eigenvalues.size(); ++i) {
@@ -319,7 +321,8 @@ int main() {
 							}
 							result << "块J-D重启轮数" << bjd.nRestart << endl;
 							result << "块J-D迭代次数" << bjd.nIter << endl;
-							result << "块J-D乘法次数" << bjd.com_of_mul << endl << endl;
+							result << "块J-D乘法次数" << bjd.com_of_mul << endl;
+							result << "块J-D计算时间：" << bjd.end_time - bjd.start_time << "秒" << endl << endl;
 							if (bjd.com_of_mul < best) {
 								best = bjd.com_of_mul;
 								best_gmres_size = gmres_size;
@@ -327,7 +330,8 @@ int main() {
 								best_restart = restart;
 							}
 							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
-								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.nRestart << ", " << bjd.com_of_mul << endl;
+								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.nRestart << ", " 
+								<< bjd.com_of_mul << ", " << bjd.end_time - bjd.start_time << endl;
 							time_t now = time(&now);
 							if (totalTimeCheck(current, now))
 								break;
@@ -358,7 +362,7 @@ int main() {
 #ifdef mRitz
 		method = "Ritz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, r, cgstep, iter, multi" << endl;
+		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
 		for (int nev = nevrange; nev <= nevrange; nev += 5) {
 			if (A.rows() / nev < 3)
 				break;
@@ -388,13 +392,14 @@ int main() {
 							result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 						}
 						result << "Ritz法迭代次数" << ritz.nIter << endl;
-						result << "Ritz法乘法次数" << ritz.com_of_mul << endl << endl;
+						result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
+						result << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
 						if (ritz.com_of_mul < best) {
 							best = ritz.com_of_mul;
 							best_r = r;
 							best_step = cgstep;
 						}
-						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << endl;
+						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
 						time_t now = time(&now);
 						if (totalTimeCheck(current, now))
 							break;

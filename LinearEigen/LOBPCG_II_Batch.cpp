@@ -114,4 +114,5 @@ void LOBPCG_II_Batch::compute() {
 		P.leftCols(xwid) = tmp.middleCols(cnv - prev, xwid);
 		P.rightCols(P.cols() - xwid) = MatrixXd::Random(A.rows(), P.cols() - xwid);
 	}
+	finish();
 }
