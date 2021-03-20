@@ -51,6 +51,9 @@ void IterRitz::compute() {
 
 			realX += X1;
 
+			if (i == 0)
+				X1 = realX;
+
 			BX = B * realX;
 			com_of_mul += B.nonZeros() * realX.cols();
 
