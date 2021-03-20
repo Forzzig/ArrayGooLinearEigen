@@ -12,7 +12,29 @@ Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep
 	projection_RR(X, A, LAM, evec);
 	X *= evec;
 	linearsolver.compute(A);
+		
+#ifndef DIRECT
 	linearsolver.setMaxIterations(cgstep);
+#else
+	SparseMatrix<double> L = linearsolver.matrixL();
+	int* bandwidth = new int[A.rows()];
+	memset(bandwidth, 255, sizeof(int) * A.rows());
+	for (int k = 0; k < L.cols(); ++k)
+		for (SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+			if (bandwidth[it.row()] < 0)
+				bandwidth[it.row()] = k;
+	
+	for (int k = 0; k < A.rows(); ++k) {
+		if (bandwidth[k] < 0)
+			bandwidth[k] = 0;
+		else
+			bandwidth[k] = k - bandwidth[k];
+		com_of_mul += bandwidth[k] * (bandwidth[k] - 1) / 2;
+	}
+	com_of_mul += 6 * L.nonZeros() + A.nonZeros();
+	delete bandwidth;
+#endif // !DIRECT
+
 	cout << "CG求解器准备完成..." << endl;
 	cout << "初始化完成" << endl;
 }
@@ -24,62 +46,50 @@ void Ritz::compute() {
 	SparseMatrix<double> tmpA;
 	X1.resize(A.rows(), q * r);
 	P.resize(A.rows(), 0);
+	Map<MatrixXd> X0(&X(0, 0), A.rows(), q);
+
 	while (true) {
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
 		cout << "移频：" << shift << endl;
+
+		new (&X0) Map<MatrixXd>(&X(0, 0), X.rows(), X.cols());
 		
-		tmp = B * X;
-		com_of_mul += B.nonZeros();
-
-		for (int j = 0; j < q; ++j) {
-			tmp.col(j) *= LAM(j, 0);
-		}
-		com_of_mul += q * A.rows();
-
-		X1.leftCols(q) = linearsolver.solveWithGuess(tmp, X);
-		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
-			cgstep * (A.nonZeros() + 7 * A.rows()));
-
-		orthogonalization(X1.leftCols(q), eigenvectors, B);
-		com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
-
-		orthogonalization(X1.leftCols(q), B);
-		com_of_mul += (q + 1) * q * A.rows();
-
-		for (int i = 1; i < r; ++i) {
+		
+		for (int i = 0; i < r; ++i) {
 			
-			tmp = B * X1.middleCols((i - 1) * q, q);
+			coutput << "X0--------------------------------" << endl << X0 << endl;
+			tmp = B * X0;
 			com_of_mul += B.nonZeros() * q;
-				
+
+#ifndef DIRECT			
 			for (int j = 0; j < q; ++j) {
 				tmp.col(j) *= LAM(j, 0);
 			}
 			com_of_mul += A.rows() * q;
 
-			X1.middleCols(i * q, q) = linearsolver.solveWithGuess(tmp, X1.middleCols((i - 1) * q, q));
+			X1.middleCols(i * q, q) = linearsolver.solveWithGuess(tmp, X0);
 			com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
 				cgstep * (A.nonZeros() + 7 * A.rows()));
+#else
+			X1.middleCols(i * q, q) = linearsolver.solve(tmp);
+			com_of_mul += 2 * L.nonZeros() + 5 * A.rows();
+#endif // !DIRECT
 
 			orthogonalization(X1.middleCols(i * q, q), eigenvectors, B);
-			com_of_mul += q * eigenvectors.cols() * A.rows() * 2;
-
 			orthogonalization(X1.middleCols(i * q, q), X1.leftCols(i * q), B);
-			com_of_mul += q * i * q * A.rows() * 2;
-
 			orthogonalization(X1.middleCols(i * q, q), B);
-			com_of_mul += (q + 1) * q * A.rows();
+			
+			new (&X0) Map<MatrixXd>(&X1(0, i * q), A.rows(), q);
 		}
 		
 		projection_RR(X1, A, eval, evec);
-		com_of_mul += X1.cols() * A.nonZeros() * X1.cols() + (24 * X1.cols() * X1.cols() * X1.cols());
 
-		Xnew = X1 * evec;
-		com_of_mul += A.rows() * X1.cols() * evec.cols();
+		Xnew = X1 * evec.leftCols(2 * q);
+		com_of_mul += A.rows() * X1.cols() * 2 * q;
 
 		system("cls");
 		cnv = conv_select(eval, Xnew, shift, LAM, X);
-		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		cout << "已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev) {
@@ -89,6 +99,5 @@ void Ritz::compute() {
 		time_t now = time(&now);
 		if (timeCheck(start_time, now))
 			break;
-
 	}
 }

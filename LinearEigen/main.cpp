@@ -24,11 +24,11 @@ fstream output;
 fstream result;
 
 //求解器列表
-//#define mLOBPCG_I
-//#define mLOBPCG_II
+#define mLOBPCG_I
+#define mLOBPCG_II
 #define miRitz
-//#define mBJD
-//#define mRitz
+#define mBJD
+#define mRitz
 
 //特殊后缀
 string suff = "";
@@ -37,51 +37,51 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{ /*"bcsstk01",*/
+{	"bcsstk01",
 	"bcsstk02",
-	//"bcsstk05",
-	//"bcsstk07",
-	//"bcsstk08",
-	//"bcsstk09",
-	//"bcsstk10",
-	//"bcsstk12",
-	//"bcsstk13",
-	//"bcsstk15",
-	//"bcsstk16",
-	//"bcsstk17",
-	//"bcsstk18",
-	//"bcsstk19",
-	//"bwm2000",
-	//"fidapm29",
-	//"s3rmt3m3",
-	//"1138_bus",
+	"bcsstk05",
+	"bcsstk07",
+	"bcsstk08",
+	"bcsstk09",
+	"bcsstk10",
+	"bcsstk12",
+	"bcsstk13",
+	"bcsstk15",
+	"bcsstk16",
+	"bcsstk17",
+	"bcsstk18",
+	"bcsstk19",
+	"bwm2000",
+	"fidapm29",
+	"s3rmt3m3",
+	"1138_bus",
 
-	//"sym-pos/apache1",
-	//"sym-pos/ct20stif",
-	//"sym-pos/oilpan",
-	//"sym-pos/apache2",
-	//"sym-pos/shipsec8",
-	//"sym-pos/ship_003",
-	//"sym-pos/shipsec5",
-	//"sym-pos/crankseg_1",
-	//"sym-pos/bmw7st_1",
-	//"sym-pos/m_t1",
-	//"sym-pos/x104",
-	//"sym-pos/hood",
-	//"sym-pos/crankseg_2",
-	//"sym-pos/pwtk",
-	//"sym-pos/bmwcra_1",
-	//"sym-pos/msdoor",
-	//"sym-pos/StocF-1465",
-	//"sym-pos/Fault_639",
-	//"sym-pos/Emilia_923",
-	//"sym-pos/inline_1",
-	//"sym-pos/ldoor",
-	//"sym-pos/Hook_1498",
-	//"sym-pos/Geo_1438",
-	//"sym-pos/Serena",
-	//"sym-pos/audikw_1",
-	//"sym-pos/Flan_1565"
+	"sym-pos/apache1",
+	"sym-pos/ct20stif",
+	"sym-pos/oilpan",
+	"sym-pos/apache2",
+	"sym-pos/shipsec8",
+	"sym-pos/ship_003",
+	"sym-pos/shipsec5",
+	"sym-pos/crankseg_1",
+	"sym-pos/bmw7st_1",
+	"sym-pos/m_t1",
+	"sym-pos/x104",
+	"sym-pos/hood",
+	"sym-pos/crankseg_2",
+	"sym-pos/pwtk",
+	"sym-pos/bmwcra_1",
+	"sym-pos/msdoor",
+	"sym-pos/StocF-1465",
+	"sym-pos/Fault_639",
+	"sym-pos/Emilia_923",
+	"sym-pos/inline_1",
+	"sym-pos/ldoor",
+	"sym-pos/Hook_1498",
+	"sym-pos/Geo_1438",
+	"sym-pos/Serena",
+	"sym-pos/audikw_1",
+	"sym-pos/Flan_1565"
 };
 
 int main() {
@@ -372,13 +372,13 @@ int main() {
 					if (A.rows() / (batch * r) < 2)
 						break;
 
-					//TODO 稍多一点点
-					for (int cgstep = cgrange + 5; cgstep <= cgrange + 25; cgstep += 10) {
+					//TODO 稍微大一点点，如果直接法随便设置一个数
+					for (int cgstep = cgrange + 5; cgstep <= cgrange + 5; cgstep += 10) {
 						if (A.rows() / cgstep < 2)
 							break;
 						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-						result << "迭代Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						cout << "迭代Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+						result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+						cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 						Ritz ritz(A, B, nev, cgstep, batch, r);
 						ritz.compute();
 
@@ -387,8 +387,8 @@ int main() {
 							//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
 							result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 						}
-						result << "迭代Ritz法迭代次数" << ritz.nIter << endl;
-						result << "迭代Ritz法乘法次数" << ritz.com_of_mul << endl << endl;
+						result << "Ritz法迭代次数" << ritz.nIter << endl;
+						result << "Ritz法乘法次数" << ritz.com_of_mul << endl << endl;
 						if (ritz.com_of_mul < best) {
 							best = ritz.com_of_mul;
 							best_r = r;
@@ -413,7 +413,7 @@ int main() {
 			if (totalTimeCheck(current, now))
 				break;
 		}
-		cout << "对" << matrixName << "使用迭代Ritz法结束。" << endl;
+		cout << "对" << matrixName << "使用Ritz法结束。" << endl;
 		result.close();
 		output.close();
 #endif
