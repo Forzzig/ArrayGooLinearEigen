@@ -52,14 +52,13 @@ void BJD::compute() {
 
 			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), HAB.block(0, 0, Vj.cols(), Vj.cols()), 0, eval, evec);
 			RR(H.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
-			com_of_mul += 4 * Vj.cols() * Vj.cols() * Vj.cols();
 			
 			//t2 = clock();
 			//tRR += t2 - t1;
 
 			//注意eval长度是偏长的
 			ui = Vj * evec.leftCols(nd);
-			com_of_mul += A.rows() * Vj.cols() * evec.cols();
+			com_of_mul += A.rows() * Vj.cols() * nd;
 
 			ri = B * ui;
 			for (int j = 0; j < ri.cols(); ++j) {
@@ -72,7 +71,6 @@ void BJD::compute() {
 
 			system("cls");
 			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
-			com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 			cout << "已收敛特征向量个数：" << cnv << endl;
 
 			//t1 = clock();
@@ -81,38 +79,25 @@ void BJD::compute() {
 			if (cnv > prev)
 				break;
 
-			time_t now = time(&now);
-			if (timeCheck(start_time, now))
+			if (i == restart)
 				break;
 
-			if (i == restart)
+			time_t now = time(&now);
+			if (timeCheck(start_time, now))
 				break;
 
 			Map<MatrixXd> X(&V(0, Vj.cols()), A.rows(), ri.cols());
 			X = MatrixXd::Zero(A.rows(), ri.cols());
 
 			L_GMRES(A, B, ri, ui, X, eval, gmres_size);
-			com_of_mul += A.rows() + A.rows() * ui.cols() + ui.cols() * A.rows() * ui.cols() + ui.cols() * ui.cols() * ui.cols() +
-				ri.cols() * (A.nonZeros() + ui.rows() * ui.cols() + ui.cols() * ui.rows()
-							+ A.rows() + ui.cols() * ui.rows() + ui.cols() * ui.cols() + ui.rows() * ui.cols()
-							+ A.rows() + ui.cols() * ui.rows() + ui.cols() * ui.cols() + ui.rows() * ui.cols()
-							+ cgstep * (A.nonZeros() + ui.rows() * ui.cols() + ui.cols() * ui.rows()
-											+ A.rows() + ui.cols() * ui.rows() + ui.cols() * ui.cols() + ui.rows() * ui.cols()
-											+ gmres_size * (gmres_size + 1) / 2 * (A.rows() + ui.cols())
-											+ A.rows() + ui.cols())
-							+ cgstep * (A.rows() + ui.cols()));
 
 			//t2 = clock();
 			//tGMR += t2 - t1;
 
 			orthogonalization(X, eigenvectors, B);
-			com_of_mul += X.cols() * eigenvectors.cols() * A.rows() * 2;
-
 			orthogonalization(X, Vj, B);
-			com_of_mul += X.cols() * Vj.cols() * A.rows() * 2;
-
+			
 			int dep = orthogonalization(X, B);
-			com_of_mul += (X.cols() + 1) * X.cols() * A.rows();
 
 			//t1 = clock();
 			//tOrt += t1 - t2;
@@ -148,7 +133,6 @@ void BJD::compute() {
 			new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), Vj.cols() + X.cols());
 			new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), WAj.cols() + X.cols());
 			/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), WBj.cols() + X.cols());*/
-
 		}
 		if (eigenvalues.size() >= nev)
 			break;
@@ -158,7 +142,7 @@ void BJD::compute() {
 			break;
 
 		int left = nd - (eigenvalues.size() - prev);
-		nd = batch < A.rows() - eigenvalues.size() ? batch : A.rows() - eigenvalues.size();
+		nd = (batch < A.rows() - eigenvalues.size()) ? batch : A.rows() - eigenvalues.size();
 		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);
 		Vj.leftCols(left) = tmpevec.leftCols(left);
 		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);

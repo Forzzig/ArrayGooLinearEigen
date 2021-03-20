@@ -62,7 +62,7 @@ void LOBPCG_I_Batch::compute() {
 		new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols());
 		orthogonalization(WP, eigenvectors, B);
 		orthogonalization(WP, X, B);
-		
+
 		int dep = orthogonalization(WP, B);
 
 		//正交化后会有线性相关项，剔除
