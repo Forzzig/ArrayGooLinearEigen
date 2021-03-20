@@ -1,3 +1,6 @@
+//#define EIGEN_USE_MKL_ALL
+//#include "mkl.h"
+
 #include<iostream>
 #include<Eigen\Sparse>
 #include<mtxio.h>
