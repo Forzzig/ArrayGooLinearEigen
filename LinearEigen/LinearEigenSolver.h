@@ -122,11 +122,12 @@ int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double 
 	int goon = 0;
 	int cnv = 0;
 	for (int i = 0; i < evec.cols(); ++i) {
+		double err = 1;
 		if (flag > 0) {
 			tmpA = A * evec.col(i);
 			tmpB = B * evec.col(i);
 			tmp = tmpB * (eval(i, 0) - shift) - tmpA;
-			double err = tmp.col(0).norm() / tmpA.norm();
+			err = tmp.col(0).norm() / tmpA.norm();
 
 			com_of_mul += A.nonZeros() + B.nonZeros() + 3 * A.rows();
 
@@ -141,7 +142,7 @@ int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double 
 				continue;
 			}
 		}
-		cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，未收敛" << endl;
+		cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，相对误差：" << err << endl;
 		//vecout与evec可能相同
 		if (&vecout(0, goon) != &evec(0, i))
 			vecout.col(goon) = evec.col(i);
