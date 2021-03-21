@@ -90,7 +90,7 @@ void Ritz::compute() {
 
 		system("cls");
 		cnv = conv_select(eval, Xnew, shift, LAM, X);
-		cout << "已收敛特征向量个数：" << cnv << endl;
+		cout << "Ritz法已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev) {
 			break;

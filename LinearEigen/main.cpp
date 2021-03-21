@@ -337,7 +337,7 @@ int main() {
 #ifdef mRitz
 		method = "Ritz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
+		output << "nev, batch, r, iter, multi, time" << endl;
 		for (int i = 0; i < Ritzparams.size(); ++i) {
 			int nev = IRparams[i].nev;
 			int batch = IRparams[i].batch;
@@ -351,8 +351,8 @@ int main() {
 				continue;
 	
 			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-			result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
+			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);
 			ritz.compute();
 
@@ -365,7 +365,7 @@ int main() {
 			result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
 			result << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
 							
-			output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
+			output << nev << ", " << batch << ", " << r << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;	

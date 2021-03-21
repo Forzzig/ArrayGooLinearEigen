@@ -91,7 +91,7 @@ void IterRitz::compute() {
 		int cnv = conv_select(eval, Xnew, shift, Lam, X);
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		
-		cout << "已收敛特征向量个数：" << cnv << endl;
+		cout << "IterRitz已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev) {
 			break;

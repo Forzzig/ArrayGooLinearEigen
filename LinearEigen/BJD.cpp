@@ -71,7 +71,7 @@ void BJD::compute() {
 
 			system("cls");
 			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
-			cout << "已收敛特征向量个数：" << cnv << endl;
+			cout << "BJD已收敛特征向量个数：" << cnv << endl;
 
 			//t1 = clock();
 			//tCnv += t1 - t2;

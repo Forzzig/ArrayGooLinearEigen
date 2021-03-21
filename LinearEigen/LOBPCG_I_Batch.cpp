@@ -89,7 +89,7 @@ void LOBPCG_I_Batch::compute() {
 		system("cls");
 		int prev = eigenvalues.size();
 		int cnv = conv_select(eval, Xnew, 0, eval, X);
-		cout << "已收敛特征向量个数：" << cnv << endl;
+		cout << "LOBPCG-I已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev)
 			break;
