@@ -8,7 +8,6 @@ using namespace Eigen;
 class Ritz : public LinearEigenSolver {
 public:
 	MatrixXd X;
-	MatrixXd X1;
 	MatrixXd LAM, V, P;
 	int q, r, cgstep;
 

@@ -44,21 +44,20 @@ void Ritz::compute() {
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
 	SparseMatrix<double> tmpA;
-	X1.resize(A.rows(), q * r);
+	V.resize(A.rows(), q * (r + 1));
 	P.resize(A.rows(), 0);
 	Map<MatrixXd> X0(&X(0, 0), A.rows(), q);
-
+	Map<MatrixXd> X1(&V(0, 0), A.rows(), q);
+	Map<MatrixXd> V0(&V(0, 0), A.rows(), 0);
 	while (true) {
 		++nIter;
 		cout << "µü´ú²½£º" << nIter << endl;
 		cout << "ÒÆÆµ£º" << shift << endl;
 
 		new (&X0) Map<MatrixXd>(&X(0, 0), X.rows(), X.cols());
-		
-		
+		new (&X1) Map<MatrixXd>(&V(0, 0), V.rows(), X.cols());
+		new (&V0) Map<MatrixXd>(&V(0, 0), V.rows(), 0);
 		for (int i = 0; i < r; ++i) {
-			
-			coutput << "X0--------------------------------" << endl << X0 << endl;
 			tmp = B * X0;
 			com_of_mul += B.nonZeros() * q;
 
@@ -68,24 +67,25 @@ void Ritz::compute() {
 			}
 			com_of_mul += A.rows() * q;
 
-			X1.middleCols(i * q, q) = linearsolver.solveWithGuess(tmp, X0);
+			X1 = linearsolver.solveWithGuess(tmp, X0);
 			com_of_mul += tmp.cols() * (A.nonZeros() + 4 * A.rows() +
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 #else
-			X1.middleCols(i * q, q) = linearsolver.solve(tmp);
+			X1 = linearsolver.solve(tmp);
 			com_of_mul += 2 * L.nonZeros() + 5 * A.rows();
 #endif // !DIRECT
 
-			orthogonalization(X1.middleCols(i * q, q), eigenvectors, B);
-			orthogonalization(X1.middleCols(i * q, q), X1.leftCols(i * q), B);
-			orthogonalization(X1.middleCols(i * q, q), B);
+			orthogonalization(X1, eigenvectors, B);
+			orthogonalization(X1, V0, B);
+			int dep = orthogonalization(X1, B);
 			
-			new (&X0) Map<MatrixXd>(&X1(0, i * q), A.rows(), q);
+			new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
+			new (&X0) Map<MatrixXd>(&X1(0, 0), A.rows(), X1.cols() - dep);
+			new (&X1) Map<MatrixXd>(&V(0, V0.cols()), A.rows(), X0.cols());
 		}
-		
-		projection_RR(X1, A, eval, evec);
+		projection_RR(V0, A, eval, evec);
 
-		Xnew = X1 * evec.leftCols(2 * q);
+		Xnew = V0 * evec.leftCols(2 * q);
 		com_of_mul += A.rows() * X1.cols() * 2 * q;
 
 		system("cls");

@@ -13,7 +13,7 @@
 using namespace std;
 using namespace Eigen;
 
-int fstream_prepare(fstream& txt, fstream& csv, SparseMatrix<double>& A, string& matrix_name, string& method, string& suff) {
+int fstream_prepare(ofstream& txt, ofstream& csv, SparseMatrix<double>& A, string& matrix_name, string& method, string& suff) {
 	string folderPath = "./result/";
 
 	for (int i = 0; i < matrix_name.length(); ++i) {

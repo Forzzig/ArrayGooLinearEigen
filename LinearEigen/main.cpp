@@ -20,14 +20,11 @@
 using namespace std;
 using namespace Eigen;
 
-fstream output;
-fstream result;
-
 //求解器列表
-#define mLOBPCG_I
-#define mLOBPCG_II
-#define miRitz
-#define mBJD
+//#define mLOBPCG_I
+//#define mLOBPCG_II
+//#define miRitz
+//#define mBJD
 #define mRitz
 
 //特殊后缀
@@ -37,11 +34,11 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	"bcsstk01",
+{	/*"bcsstk01",
 	"bcsstk02",
-	"bcsstk05",
+	"bcsstk05",*/
 	"bcsstk07",
-	"bcsstk08",
+	/*"bcsstk08",
 	"bcsstk09",
 	"bcsstk10",
 	"bcsstk12",
@@ -81,7 +78,7 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"
+	"sym-pos/Flan_1565"*/
 };
 
 int main() {
@@ -137,11 +134,11 @@ int main() {
 		{30, 30, 20, 10}
 	};
 	vector<param> Ritzparams = {
-		{10, 10, 0, 3},
+		/*{10, 10, 0, 3},
 		{10, 10, 0, 4},
 		{10, 10, 0, 5},
 		{20, 10, 0, 3},
-		{30, 10, 0, 3},
+		{30, 10, 0, 3},*/
 		{30, 20, 0, 3},
 		{30, 30, 0, 3}
 	};
@@ -163,9 +160,11 @@ int main() {
 		cout << "正在求解" << matrixName << "....................." << endl;
 
 #ifdef mLOBPCG_I
+		ofstream LP1output;
+		ofstream LP1result;
 		method = "LOBPCG_I";
-		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, cgstep, iter, multi, time" << endl;
+		fstream_prepare(LP1result, LP1output, A, matrixName, method, suff);
+		LP1output << "nev, batch, cgstep, iter, multi, time" << endl;
 		for (int i = 0; i < LOBIparams.size(); ++i) {
 			int nev = LOBIparams[i].nev;
 			int batch = LOBIparams[i].batch;
@@ -179,34 +178,36 @@ int main() {
 				continue;
 						
 			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-			result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			LP1result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
 			LP1.compute();
 
 			for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
-				result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
+				LP1result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
 				//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-				result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
+				LP1result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
 			}
-			result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
-			result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl;
-			result << "LOBPCG_I计算时间：" << LP1.end_time - LP1.start_time << "秒" << endl << endl;
+			LP1result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
+			LP1result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl;
+			LP1result << "LOBPCG_I计算时间：" << LP1.end_time - LP1.start_time << "秒" << endl << endl;
 						
-			output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << ", " << LP1.end_time - LP1.start_time << endl;
+			LP1output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << ", " << LP1.end_time - LP1.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_I结束。" << endl;
-		result.close();
-		output.close();
+		LP1result.close();
+		LP1output.close();
 #endif
 
 #ifdef mLOBPCG_II
+		ofstream LP2output;
+		ofstream LP2result;
 		method = "LOBPCG_II";
-		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, cgstep, iter, multi, time" << endl;
+		fstream_prepare(LP2result, LP2output, A, matrixName, method, suff);
+		LP2output << "nev, batch, cgstep, iter, multi, time" << endl;
 		for (int i = 0; i < LOBIIparams.size(); ++i) {
 			int nev = LOBIIparams[i].nev;
 			int batch = LOBIIparams[i].batch;
@@ -220,34 +221,36 @@ int main() {
 				continue;
 
 			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-			result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			LP2result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
 			LP2.compute();
 
 			for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
-				result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
+				LP2result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
 				//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-				result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
+				LP2result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
 			}
-			result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
-			result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl;
-			result << "LOBPCG_II计算时间：" << LP2.end_time - LP2.start_time << "秒" << endl << endl;
+			LP2result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
+			LP2result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl;
+			LP2result << "LOBPCG_II计算时间：" << LP2.end_time - LP2.start_time << "秒" << endl << endl;
 						
-			output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << ", " << LP2.end_time - LP2.start_time << endl;
+			LP2output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << ", " << LP2.end_time - LP2.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用LOBPCG_II结束。" << endl;
-		result.close();
-		output.close();
+		LP2result.close();
+		LP2output.close();
 #endif
 
 #ifdef miRitz
+		ofstream IRoutput;
+		ofstream IRresult;
 		method = "IterRitz";
-		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
+		fstream_prepare(IRresult, IRoutput, A, matrixName, method, suff);
+		IRoutput << "nev, batch, r, cgstep, iter, multi, time" << endl;
 		for (int i = 0; i < IRparams.size(); ++i) {
 			int nev = IRparams[i].nev;
 			int batch = IRparams[i].batch;
@@ -264,39 +267,41 @@ int main() {
 				continue;
 			
 			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-			result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			IRresult << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			IterRitz iritz(A, B, nev, cgstep, batch, r);
 			iritz.compute();
 
 			for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
-				result << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
+				IRresult << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
 				//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
-				result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
+				IRresult << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
 			}
-			result << "改进Ritz法迭代次数" << iritz.nIter << endl;
-			result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
-			result << "改进Ritz法计算时间：" << iritz.end_time - iritz.start_time << "秒" << endl << endl;
+			IRresult << "改进Ritz法迭代次数" << iritz.nIter << endl;
+			IRresult << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
+			IRresult << "改进Ritz法计算时间：" << iritz.end_time - iritz.start_time << "秒" << endl << endl;
 							
-			output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << ", " << iritz.end_time - iritz.start_time << endl;
+			IRoutput << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << ", " << iritz.end_time - iritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
-		result.close();
-		output.close();
+		IRresult.close();
+		IRoutput.close();
 #endif
 
 #ifdef mBJD
+		ofstream BJDoutput;
+		ofstream BJDresult;
 		method = "BJD";
-		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, restart, gmres_size, iter, nRestart, multi, time" << endl;
+		fstream_prepare(BJDresult, BJDoutput, A, matrixName, method, suff);
+		BJDoutput << "nev, batch, restart, gmres_size, iter, nRestart, multi, time" << endl;
 		for (int i = 0; i < BJDparams.size(); ++i) {
-			int nev = IRparams[i].nev;
-			int batch = IRparams[i].batch;
-			int gmres_size = IRparams[i].cg;
-			int restart = IRparams[i].res;
+			int nev = BJDparams[i].nev;
+			int batch = BJDparams[i].batch;
+			int gmres_size = BJDparams[i].cg;
+			int restart = BJDparams[i].res;
 				
 			if (A.rows() / nev < 3)
 				continue;
@@ -308,40 +313,42 @@ int main() {
 				continue;
 								
 			//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
-			result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
+			BJDresult << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			BJD bjd(A, B, nev, gmres_size, restart, batch, gmres_size);
 			bjd.compute();
 
 			for (int i = 0; i < bjd.eigenvalues.size(); ++i) {
-				result << "第" << i + 1 << "个特征值：" << bjd.eigenvalues[i] << "，";
+				BJDresult << "第" << i + 1 << "个特征值：" << bjd.eigenvalues[i] << "，";
 				//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
-				result << "相对误差：" << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
+				BJDresult << "相对误差：" << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
 			}
-			result << "块J-D重启轮数" << bjd.nRestart << endl;
-			result << "块J-D迭代次数" << bjd.nIter << endl;
-			result << "块J-D乘法次数" << bjd.com_of_mul << endl;
-			result << "块J-D计算时间：" << bjd.end_time - bjd.start_time << "秒" << endl << endl;
+			BJDresult << "块J-D重启轮数" << bjd.nRestart << endl;
+			BJDresult << "块J-D迭代次数" << bjd.nIter << endl;
+			BJDresult << "块J-D乘法次数" << bjd.com_of_mul << endl;
+			BJDresult << "块J-D计算时间：" << bjd.end_time - bjd.start_time << "秒" << endl << endl;
 
-			output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << bjd.nIter << ", " << bjd.nRestart << ", "
+			BJDoutput << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << bjd.nIter << ", " << bjd.nRestart << ", "
 				<< bjd.com_of_mul << ", " << bjd.end_time - bjd.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
 		}
 		cout << "对" << matrixName << "使用块J-D结束。" << endl;
-		result.close();
-		output.close();
+		BJDresult.close();
+		BJDoutput.close();
 #endif
 
 #ifdef mRitz
+		ofstream Ritzoutput;
+		ofstream Ritzresult;
 		method = "Ritz";
-		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, r, iter, multi, time" << endl;
+		fstream_prepare(Ritzresult, Ritzoutput, A, matrixName, method, suff);
+		Ritzoutput << "nev, batch, r, iter, multi, time" << endl;
 		for (int i = 0; i < Ritzparams.size(); ++i) {
-			int nev = IRparams[i].nev;
-			int batch = IRparams[i].batch;
-			int r = IRparams[i].res;
+			int nev = Ritzparams[i].nev;
+			int batch = Ritzparams[i].batch;
+			int r = Ritzparams[i].res;
 
 			if (A.rows() / nev < 3)
 				continue;
@@ -351,28 +358,28 @@ int main() {
 				continue;
 	
 			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-			result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
+			Ritzresult << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);
 			ritz.compute();
 
 			for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
-				result << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
+				Ritzresult << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
 				//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
-				result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
+				Ritzresult << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 			}
-			result << "Ritz法迭代次数" << ritz.nIter << endl;
-			result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
-			result << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
+			Ritzresult << "Ritz法迭代次数" << ritz.nIter << endl;
+			Ritzresult << "Ritz法乘法次数" << ritz.com_of_mul << endl;
+			Ritzresult << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
 							
-			output << nev << ", " << batch << ", " << r << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
+			Ritzoutput << nev << ", " << batch << ", " << r << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;	
 		}
 		cout << "对" << matrixName << "使用Ritz法结束。" << endl;
-		result.close();
-		output.close();
+		Ritzresult.close();
+		Ritzoutput.close();
 #endif
 		
 		system("cls");
