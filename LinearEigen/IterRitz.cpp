@@ -65,18 +65,10 @@ void IterRitz::compute() {
 			com_of_mul += 2 * A.rows() * BX.cols();
 
 			orthogonalization(X1, eigenvectors, B);
-
-			coutput << "X1-----------------------" << endl << X1 << endl;
-			coutput << "X1*BX1------------------" << endl << X1.transpose() * B * X1 << endl;
-			coutput << "X1*AX1------------------" << endl << X1.transpose() * A * X1 << endl;
-
 			orthogonalization(X1, V0, B);
 			int dep = orthogonalization(X1, B);
 			new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
 			new (&X1) Map<MatrixXd>(&V0(A.rows() - 1, V0.cols() - 1) + 1, A.rows(), realX.cols());
-			coutput << "V0-----------------------" << endl << V0 << endl;
-			coutput << "VT*BV------------------" << endl << V0.transpose() * B * V0 << endl;
-			coutput << "VT*AV------------------" << endl << V0.transpose() * A * V0 << endl;
 		}
 
 		if (P.cols() != X1.cols())
@@ -86,9 +78,6 @@ void IterRitz::compute() {
 		orthogonalization(X1, V0, B);
 		int dep = orthogonalization(X1, B);
 		new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
-		coutput << "V0-----------------------" << endl << V0 << endl;
-		coutput << "VT * BV----------------" << endl << V0.transpose() * B * V0 << endl;
-		coutput << "VT*AV------------------" << endl << V0.transpose() * A * V0 << endl;
 		projection_RR(V0, A, eval, evec);
 
 		int nd = (2 * q < V0.cols()) ? 2 * q : V0.cols();
@@ -103,8 +92,6 @@ void IterRitz::compute() {
 		com_of_mul += (A.nonZeros() + B.nonZeros() + 3 * A.rows()) * LinearEigenSolver::CHECKNUM;
 		
 		cout << "已收敛特征向量个数：" << cnv << endl;
-
-		system("pause");
 
 		if (cnv >= nev) {
 			break;

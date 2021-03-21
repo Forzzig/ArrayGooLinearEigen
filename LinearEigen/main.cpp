@@ -92,6 +92,59 @@ int main() {
 	//需要的时候开随机化
 	//	srand((unsigned)time(NULL));
 	
+	struct param{
+		int nev, batch, cg, res;
+	};
+
+	vector<param> LOBIparams = {
+		{10, 10, 20, 0},
+		{10, 10, 30, 0},
+		{10, 10, 40, 0},
+		{20, 10, 20, 0},
+		{30, 10, 20, 0},
+		{30, 20, 20, 0},
+		{30, 30, 20, 0}
+	};
+	vector<param> LOBIIparams = {
+		{10, 10, 20, 0},
+		{10, 10, 30, 0},
+		{10, 10, 40, 0},
+		{20, 10, 20, 0},
+		{30, 10, 20, 0},
+		{30, 20, 20, 0},
+		{30, 30, 20, 0}
+	};
+	vector<param> IRparams = {
+		{10, 10, 20, 2},
+		{10, 10, 20, 3},
+		{10, 10, 20, 4},
+		{10, 10, 30, 3},
+		{10, 10, 40, 3},
+		{20, 10, 20, 3},
+		{30, 10, 20, 3},
+		{30, 20, 20, 3},
+		{30, 30, 20, 3}
+	};
+	vector<param> BJDparams = {
+		{10, 10, 20, 10},
+		{10, 10, 30, 10},
+		{10, 10, 40, 10},
+		{10, 10, 20, 20},
+		{10, 10, 20, 30},
+		{20, 10, 20, 10},
+		{30, 10, 20, 10},
+		{30, 20, 20, 10},
+		{30, 30, 20, 10}
+	};
+	vector<param> Ritzparams = {
+		{10, 10, 0, 3},
+		{10, 10, 0, 4},
+		{10, 10, 0, 5},
+		{20, 10, 0, 3},
+		{30, 10, 0, 3},
+		{30, 20, 0, 3},
+		{30, 30, 0, 3}
+	};
 	while (matrices[n_matrices].length() != 0) {
 		//读A矩阵
 		string matrixName = matrices[n_matrices];
@@ -106,11 +159,6 @@ int main() {
 		B.reserve(A.rows());
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
-		
-		int cgrange = floor(log(A.rows() / 1000 + 1) / log(10)) * 6 + 10;
-		int batchrange = 5;
-		int nevrange = 20;
-		int restartrange = floor(log(A.rows() / 1000 + 1) / log(10)) * 5 + 10;
 
 		cout << "正在求解" << matrixName << "....................." << endl;
 
@@ -118,46 +166,34 @@ int main() {
 		method = "LOBPCG_I";
 		fstream_prepare(result, output, A, matrixName, method, suff);
 		output << "nev, batch, cgstep, iter, multi, time" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+		for (int i = 0; i < LOBIparams.size(); ++i) {
+			int nev = LOBIparams[i].nev;
+			int batch = LOBIparams[i].batch;
+			int cgstep = LOBIparams[i].cg;
+			
 			if (A.rows() / nev < 3)
-				break;
-			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
-				if (batch > nev)
-					break;
-				long long best = LLONG_MAX;
-				int best_step = -1;
-				//TODO 适当多一些
-				for (int cgstep = cgrange + 10; cgstep <= cgrange + 30; cgstep += 10) {
-					if (A.rows() / cgstep < 2)
-						break;
-					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-					result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
-					cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
-					LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
-					LP1.compute();
+				continue;
+			if (batch > nev)
+				continue;
+			if (A.rows() / cgstep < 2)
+				continue;
+						
+			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+			result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
+			LP1.compute();
 
-					for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
-						result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
-						//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-						result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
-					}
-					result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
-					result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl;
-					result << "LOBPCG_I计算时间：" << LP1.end_time - LP1.start_time << "秒" << endl << endl;
-					if (LP1.com_of_mul < best) {
-						best = LP1.com_of_mul;
-						best_step = cgstep;
-					}
-					output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << ", " << LP1.end_time - LP1.start_time << endl;
-					time_t now = time(&now);
-					if (totalTimeCheck(current, now))
-						break;
-				}
-				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
-				time_t now = time(&now);
-				if (totalTimeCheck(current, now))
-					break;
+			for (int i = 0; i < LP1.eigenvalues.size(); ++i) {
+				result << "第" << i + 1 << "个特征值：" << LP1.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
+				result << "相对误差：" << (A * LP1.eigenvectors.col(i) - LP1.eigenvalues[i] * B * LP1.eigenvectors.col(i)).norm() / (A * LP1.eigenvectors.col(i)).norm() << endl;
 			}
+			result << "LOBPCG_I迭代次数：" << LP1.nIter << endl;
+			result << "LOBPCG_I乘法次数：" << LP1.com_of_mul << endl;
+			result << "LOBPCG_I计算时间：" << LP1.end_time - LP1.start_time << "秒" << endl << endl;
+						
+			output << nev << ", " << batch << ", " << cgstep << ", " << LP1.nIter << ", " << LP1.com_of_mul << ", " << LP1.end_time - LP1.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
@@ -171,47 +207,34 @@ int main() {
 		method = "LOBPCG_II";
 		fstream_prepare(result, output, A, matrixName, method, suff);
 		output << "nev, batch, cgstep, iter, multi, time" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+		for (int i = 0; i < LOBIIparams.size(); ++i) {
+			int nev = LOBIIparams[i].nev;
+			int batch = LOBIIparams[i].batch;
+			int cgstep = LOBIIparams[i].cg;
+
 			if (A.rows() / nev < 3)
-				break;
-			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
-				if (batch > nev)
-					break;
-				long long best = LLONG_MAX;
-				int best_step = -1;
+				continue;
+			if (batch > nev)
+				continue;
+			if (A.rows() / cgstep < 2)
+				continue;
 
-				//TODO 适当少一些
-				for (int cgstep = cgrange - 5; cgstep <= cgrange + 15; cgstep += 10) {
-					if (A.rows() / cgstep < 2)
-						break;
-					//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
-					result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
-					cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
-					LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
-					LP2.compute();
+			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+			result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
+			LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
+			LP2.compute();
 
-					for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
-						result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
-						//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
-						result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
-					}
-					result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
-					result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl;
-					result << "LOBPCG_II计算时间：" << LP2.end_time - LP2.start_time << "秒" << endl << endl;
-					if (LP2.com_of_mul < best) {
-						best = LP2.com_of_mul;
-						best_step = cgstep;
-					}
-					output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << ", " << LP2.end_time - LP2.start_time << endl;
-					time_t now = time(&now);
-					if (totalTimeCheck(current, now))
-						break;
-				}
-				result << "计算" << nev << "个特征向量，batch大小为" << batch << "，最少需要" << best << "次乘法，cgstep设定为" << best_step << endl << endl << endl;
-				time_t now = time(&now);
-				if (totalTimeCheck(current, now))
-					break;
+			for (int i = 0; i < LP2.eigenvalues.size(); ++i) {
+				result << "第" << i + 1 << "个特征值：" << LP2.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << LP1.eigenvectors.col(i).transpose() << endl;
+				result << "相对误差：" << (A * LP2.eigenvectors.col(i) - LP2.eigenvalues[i] * B * LP2.eigenvectors.col(i)).norm() / (A * LP2.eigenvectors.col(i)).norm() << endl;
 			}
+			result << "LOBPCG_II迭代次数：" << LP2.nIter << endl;
+			result << "LOBPCG_II乘法次数：" << LP2.com_of_mul << endl;
+			result << "LOBPCG_II计算时间：" << LP2.end_time - LP2.start_time << "秒" << endl << endl;
+						
+			output << nev << ", " << batch << ", " << cgstep << ", " << LP2.nIter << ", " << LP2.com_of_mul << ", " << LP2.end_time - LP2.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
@@ -225,56 +248,37 @@ int main() {
 		method = "IterRitz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
 		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
-			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
-				if (nev < batch)
-					break;
-				if (A.rows() / nev < 3)
-					break;
+		for (int i = 0; i < IRparams.size(); ++i) {
+			int nev = IRparams[i].nev;
+			int batch = IRparams[i].batch;
+			int cgstep = IRparams[i].cg;
+			int r = IRparams[i].res;
 
-				long long best = LLONG_MAX;
-				int best_r = -1, best_step = -1;
-				for (int r = 2; r <= 4; ++r) {
-					if (A.rows() / (batch * r) < 2)
-						break;
-					//TODO 稍多一点点
-					for (int cgstep = cgrange + 5; cgstep <= cgrange + 25; cgstep += 10) {
-						if (A.rows() / cgstep < 2)
-							break;
-						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-						result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						IterRitz iritz(A, B, nev, cgstep, batch, r);
-						iritz.compute();
+			if (nev < batch)
+				continue;
+			if (A.rows() / nev < 3)
+				continue;
+			if (A.rows() / (batch * r) < 2)
+				continue;
+			if (A.rows() / cgstep < 2)
+				continue;
+			
+			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+			result << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			IterRitz iritz(A, B, nev, cgstep, batch, r);
+			iritz.compute();
 
-						for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
-							result << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
-							//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
-							result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
-						}
-						result << "改进Ritz法迭代次数" << iritz.nIter << endl;
-						result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
-						result << "改进Ritz法计算时间：" << iritz.end_time - iritz.start_time << "秒" << endl << endl;
-						if (iritz.com_of_mul < best) {
-							best = iritz.com_of_mul;
-							best_r = r;
-							best_step = cgstep;
-						}
-						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << ", " << iritz.end_time - iritz.start_time << endl;
-						time_t now = time(&now);
-						if (totalTimeCheck(current, now))
-							break;
-					}
-					time_t now = time(&now);
-					if (totalTimeCheck(current, now))
-						break;
-				}
-				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
-					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
-				time_t now = time(&now);
-				if (totalTimeCheck(current, now))
-					break;
+			for (int i = 0; i < iritz.eigenvalues.size(); ++i) {
+				result << "第" << i + 1 << "个特征值：" << iritz.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << iritz.eigenvectors.col(i).transpose() << endl;
+				result << "相对误差：" << (A * iritz.eigenvectors.col(i) - iritz.eigenvalues[i] * B * iritz.eigenvectors.col(i)).norm() / (A * iritz.eigenvectors.col(i)).norm() << endl;
 			}
+			result << "改进Ritz法迭代次数" << iritz.nIter << endl;
+			result << "改进Ritz法乘法次数" << iritz.com_of_mul << endl;
+			result << "改进Ritz法计算时间：" << iritz.end_time - iritz.start_time << "秒" << endl << endl;
+							
+			output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << iritz.nIter << ", " << iritz.com_of_mul << ", " << iritz.end_time - iritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
@@ -287,69 +291,40 @@ int main() {
 #ifdef mBJD
 		method = "BJD";
 		fstream_prepare(result, output, A, matrixName, method, suff);
-		output << "nev, batch, restart, gmres_size, gmres_restart, gmres_step, iter, nRestart, multi, time" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+		output << "nev, batch, restart, gmres_size, iter, nRestart, multi, time" << endl;
+		for (int i = 0; i < BJDparams.size(); ++i) {
+			int nev = IRparams[i].nev;
+			int batch = IRparams[i].batch;
+			int gmres_size = IRparams[i].cg;
+			int restart = IRparams[i].res;
+				
 			if (A.rows() / nev < 3)
-				break;
-			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
-				if (batch > nev)
-					break;
-				long long best = LLONG_MAX;
-				int best_gmres_size = -1, best_gmres_restart = -1, best_restart = -1;
+				continue;
+			if (batch > nev)
+				continue;
+			if (A.rows() / (batch * restart) < 2)
+				continue;
+			if (A.rows() / gmres_size < 2)
+				continue;
+								
+			//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
+			result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
+			cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
+			BJD bjd(A, B, nev, gmres_size, restart, batch, gmres_size);
+			bjd.compute();
 
-				for (int restart = restartrange; restart <= restartrange + 10; restart += 5) {
-					if (A.rows() / (batch * restart) < 2)
-						break;
-
-					//TODO 必须少
-					for (int gmres_size = cgrange / 2; gmres_size <= cgrange / 2 + 20; gmres_size += 10) {
-						if (A.rows() / gmres_size < 2)
-							break;
-						for (int gmres_restart = 1; gmres_restart <= 1; ++gmres_restart) {
-							//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
-							result << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << 
-								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
-							cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl <<
-								"    GMRES总迭代步数（扩展空间乘重启次数）：" << gmres_size * gmres_restart << "，GMRES扩展空间大小：" << gmres_size << endl;
-							BJD bjd(A, B, nev, gmres_size * gmres_restart, restart, batch, gmres_size);
-							bjd.compute();
-
-							for (int i = 0; i < bjd.eigenvalues.size(); ++i) {
-								result << "第" << i + 1 << "个特征值：" << bjd.eigenvalues[i] << "，";
-								//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
-								result << "相对误差：" << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
-							}
-							result << "块J-D重启轮数" << bjd.nRestart << endl;
-							result << "块J-D迭代次数" << bjd.nIter << endl;
-							result << "块J-D乘法次数" << bjd.com_of_mul << endl;
-							result << "块J-D计算时间：" << bjd.end_time - bjd.start_time << "秒" << endl << endl;
-							if (bjd.com_of_mul < best) {
-								best = bjd.com_of_mul;
-								best_gmres_size = gmres_size;
-								best_gmres_restart = gmres_restart;
-								best_restart = restart;
-							}
-							output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << gmres_restart << ", " 
-								<< gmres_size * gmres_restart << ", " << bjd.nIter << ", " << bjd.nRestart << ", " 
-								<< bjd.com_of_mul << ", " << bjd.end_time - bjd.start_time << endl;
-							time_t now = time(&now);
-							if (totalTimeCheck(current, now))
-								break;
-						}
-						time_t now = time(&now);
-						if (totalTimeCheck(current, now))
-							break;
-					}
-					time_t now = time(&now);
-					if (totalTimeCheck(current, now))
-						break;
-				}
-				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best << "次乘法，设定为迭代" << best_restart << 
-					"次重启，gmres设定扩展空间大小" << best_gmres_size << "，总迭代步数" << best_gmres_size * best_gmres_restart << endl << endl << endl;
-				time_t now = time(&now);
-				if (totalTimeCheck(current, now))
-					break;
+			for (int i = 0; i < bjd.eigenvalues.size(); ++i) {
+				result << "第" << i + 1 << "个特征值：" << bjd.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << LOBPCG.eigenvectors.col(i).transpose() << endl;
+				result << "相对误差：" << (A * bjd.eigenvectors.col(i) - bjd.eigenvalues[i] * B * bjd.eigenvectors.col(i)).norm() / (A * bjd.eigenvectors.col(i)).norm() << endl;
 			}
+			result << "块J-D重启轮数" << bjd.nRestart << endl;
+			result << "块J-D迭代次数" << bjd.nIter << endl;
+			result << "块J-D乘法次数" << bjd.com_of_mul << endl;
+			result << "块J-D计算时间：" << bjd.end_time - bjd.start_time << "秒" << endl << endl;
+
+			output << nev << ", " << batch << ", " << restart << ", " << gmres_size << ", " << bjd.nIter << ", " << bjd.nRestart << ", "
+				<< bjd.com_of_mul << ", " << bjd.end_time - bjd.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;
@@ -363,60 +338,37 @@ int main() {
 		method = "Ritz";
 		fstream_prepare(result, output, A, matrixName, method, suff);
 		output << "nev, batch, r, cgstep, iter, multi, time" << endl;
-		for (int nev = nevrange; nev <= nevrange; nev += 5) {
+		for (int i = 0; i < Ritzparams.size(); ++i) {
+			int nev = IRparams[i].nev;
+			int batch = IRparams[i].batch;
+			int r = IRparams[i].res;
+
 			if (A.rows() / nev < 3)
-				break;
-			for (int batch = batchrange; batch <= batchrange + 5; batch += 5) {
-				if (batch > nev)
-					break;
+				continue;
+			if (batch > nev)
+				continue;
+			if (A.rows() / (batch * r) < 2)
+				continue;
+	
+			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+			result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			Ritz ritz(A, B, nev, 0, batch, r);
+			ritz.compute();
 
-				long long best = LLONG_MAX;
-				int best_r = -1, best_step = -1;
-				for (int r = 2; r <= 4; ++r) {
-					if (A.rows() / (batch * r) < 2)
-						break;
-
-					//TODO 稍微大一点点，如果直接法随便设置一个数
-					for (int cgstep = cgrange + 5; cgstep <= cgrange + 5; cgstep += 10) {
-						if (A.rows() / cgstep < 2)
-							break;
-						//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
-						result << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-						Ritz ritz(A, B, nev, cgstep, batch, r);
-						ritz.compute();
-
-						for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
-							result << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
-							//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
-							result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
-						}
-						result << "Ritz法迭代次数" << ritz.nIter << endl;
-						result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
-						result << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
-						if (ritz.com_of_mul < best) {
-							best = ritz.com_of_mul;
-							best_r = r;
-							best_step = cgstep;
-						}
-						output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
-						time_t now = time(&now);
-						if (totalTimeCheck(current, now))
-							break;
-					}
-					time_t now = time(&now);
-					if (totalTimeCheck(current, now))
-						break;
-				}
-				result << "计算" << nev << "个特征向量，batch为" << batch << "，最少需要" << best
-					<< "次乘法，设定迭代深度为" << best_r << "，cgstep设定为" << best_step << endl << endl << endl;
-				time_t now = time(&now);
-				if (totalTimeCheck(current, now))
-					break;
+			for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
+				result << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << ritz.eigenvectors.col(i).transpose() << endl;
+				result << "相对误差：" << (A * ritz.eigenvectors.col(i) - ritz.eigenvalues[i] * B * ritz.eigenvectors.col(i)).norm() / (A * ritz.eigenvectors.col(i)).norm() << endl;
 			}
+			result << "Ritz法迭代次数" << ritz.nIter << endl;
+			result << "Ritz法乘法次数" << ritz.com_of_mul << endl;
+			result << "Ritz法计算时间：" << ritz.end_time - ritz.start_time << "秒" << endl << endl;
+							
+			output << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
-				break;
+				break;	
 		}
 		cout << "对" << matrixName << "使用Ritz法结束。" << endl;
 		result.close();
