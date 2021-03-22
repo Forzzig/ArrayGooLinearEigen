@@ -25,7 +25,9 @@ LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B,
 	cout << "CG求解器准备完成..." << endl;
 	cout << "初始化完成" << endl;
 }
-
+LOBPCG_I_Batch::~LOBPCG_I_Batch() {
+	delete[] storage;
+}
 
 void LOBPCG_I_Batch::compute() {
 	MatrixXd eval, evec, tmp, Xnew, AX, BX, AWP;

@@ -15,7 +15,7 @@ public:
 	static double ORTH_TOL;
 	static double EIGTOL;
 	static int CHECKNUM;
-	static fstream coutput;
+	static ofstream coutput;
 	int nIter;
 	time_t start_time, end_time;
 	long long com_of_mul;
@@ -24,9 +24,10 @@ public:
 	int nev;
 	vector<double> eigenvalues;
 	MatrixXd eigenvectors;
+	
 	//GeneralizedSelfAdjointEigenSolver<MatrixXd> eigensolver;
 	SelfAdjointEigenSolver<MatrixXd> eigensolver;
-	ConjugateGradient<SparseMatrix<double>, Lower | Upper> linearsolver;
+	
 	template <typename Derived>
 	void projection_RR(Derived& V, SparseMatrix<double>& A, MatrixXd& eigenvalues, MatrixXd& eigenvectors);
 	
@@ -135,7 +136,7 @@ int LinearEigenSolver::conv_select(Derived_val& eval, Derived_vec& evec, double 
 
 			com_of_mul += A.nonZeros() + B.nonZeros() + 3 * A.rows();
 
-			if (err < EIGTOL) {
+			if (err < LinearEigenSolver::EIGTOL) {
 				cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，相对误差：" << err << endl;
 				cout << "达到收敛条件！" << endl;
 				eigenvalues.push_back(eval(i, 0) - shift);

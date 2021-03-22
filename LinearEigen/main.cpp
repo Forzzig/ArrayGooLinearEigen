@@ -16,15 +16,16 @@
 #include<string>
 #include<TimeControl.h>
 #include<output_helper.h>
+#include<mgmres.hpp>
 
 using namespace std;
 using namespace Eigen;
 
 //求解器列表
-//#define mLOBPCG_I
-//#define mLOBPCG_II
-//#define miRitz
-//#define mBJD
+#define mLOBPCG_I
+#define mLOBPCG_II
+#define miRitz
+#define mBJD
 #define mRitz
 
 //特殊后缀
@@ -34,11 +35,11 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	/*"bcsstk01",
+{	"bcsstk01",
 	"bcsstk02",
-	"bcsstk05",*/
+	"bcsstk05",
 	"bcsstk07",
-	/*"bcsstk08",
+	"bcsstk08",
 	"bcsstk09",
 	"bcsstk10",
 	"bcsstk12",
@@ -78,7 +79,7 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"*/
+	"sym-pos/Flan_1565"
 };
 
 int main() {
@@ -143,6 +144,7 @@ int main() {
 		{30, 30, 0, 3}
 	};
 	while (matrices[n_matrices].length() != 0) {
+		
 		//读A矩阵
 		string matrixName = matrices[n_matrices];
 		SparseMatrix<double> A;
@@ -312,10 +314,10 @@ int main() {
 			if (A.rows() / gmres_size < 2)
 				continue;
 								
-			//(SparseMatrix<double> & A, SparseMatrix<double> & B, int nev, int cgstep, int restart, int batch, int gmres_size)
+			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)
 			BJDresult << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
-			BJD bjd(A, B, nev, gmres_size, restart, batch, gmres_size);
+			BJD bjd(A, B, nev, restart, batch, gmres_size, 1);
 			bjd.compute();
 
 			for (int i = 0; i < bjd.eigenvalues.size(); ++i) {
@@ -362,6 +364,8 @@ int main() {
 			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);
 			ritz.compute();
+			cout << ritz.com_of_mul << endl;
+			system("pause");
 
 			for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
 				Ritzresult << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
@@ -376,6 +380,8 @@ int main() {
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
 				break;	
+			cout << ritz.com_of_mul << endl;
+			system("pause");
 		}
 		cout << "对" << matrixName << "使用Ritz法结束。" << endl;
 		Ritzresult.close();

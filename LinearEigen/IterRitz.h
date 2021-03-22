@@ -7,6 +7,9 @@ class IterRitz : public LinearEigenSolver{
 public:
 	MatrixXd X, V, Lam, P;
 	int q, r, cgstep;
+
+	ConjugateGradient<SparseMatrix<double>, Lower | Upper> linearsolver;
+
 	IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r);
 	void compute();
 };

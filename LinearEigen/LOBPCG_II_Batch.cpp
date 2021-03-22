@@ -27,6 +27,9 @@ LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& 
 	cout << "初始化完成" << endl;
 }
 
+LOBPCG_II_Batch::~LOBPCG_II_Batch() {
+	delete[] storage;
+}
 
 void LOBPCG_II_Batch::compute() {
 

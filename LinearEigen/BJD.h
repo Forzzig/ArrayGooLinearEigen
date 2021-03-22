@@ -1,18 +1,29 @@
 #ifndef __BJD_H__
 #define __BJD_H__
 #include<LinearEigenSolver.h>
+#include<mgmres.hpp>
 
 using namespace Eigen;
 class BJD : public LinearEigenSolver {
 public:
-	int restart, gmres_size, nRestart;
+	int restart, gmres_size, gmres_restart, nRestart;
 	MatrixXd V, WA,/* WB, HA, HB, HAB,*/ H;
 	MatrixXd Y, v;
-	SparseMatrix<double> K1, tmpA;
-	int cgstep;
+	SparseMatrix<double> /*K1, */tmpA;
 	int batch;
-	BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int restart, int batch, int gmres_size);
 
+	int* ia, * ja;
+	double* a;
+	int nnz;
+	void CRSsort(int* ia, int* ja, double* a, int n);
+	void genCRS(SparseMatrix<double>& A, int* ia, int* ja, double* a);
+
+	void CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double>& B, double eff);
+
+	BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart);
+	~BJD();
+
+    /*
 	//用来实现求解V'(A-tauB)'AV = lam*V'(A-tauB)'BV的，暂时不用
 	template<typename Derived_HA, typename Derived_HB, typename Derived_HAB>
 	void generalized_RR(Derived_HA& HA, Derived_HB& HB, Derived_HAB& HAB, double tau, MatrixXd& eigenvalues, MatrixXd& eigenvectors) {
@@ -22,13 +33,15 @@ public:
 		eigenvalues = ges.eigenvalues();
 		eigenvectors = ges.eigenvectors();
 	}
+    */
 
+    /*
 	//设定好用来求补空间的与U对应的Y和v
 	template<typename Derived_U>
 	void Minv_set(Derived_U& U) {
-		/*[Ki, U;]^(-1)
-		   UT, 0;      * r = z
-		   K1 = Ki^(-1)        */
+		//  [Ki, U;]^(-1)
+		//   UT, 0;      * r = z
+		//   K1 = Ki^(-1)        
 		Y = K1 * U;
 		com_of_mul += K1.nonZeros() * U.cols();
 		
@@ -38,20 +51,72 @@ public:
 		v = v.inverse();
 		com_of_mul += v.cols() * v.cols() * v.cols() * 2 / 3 + 7 * v.cols() * v.cols() - v.cols() - v.cols();
 	}
+    */
 
-	//给GMRES用的，给r左乘U对应的预处理矩阵
-	template<typename Derived_U, typename Derived_r, typename Derived_z>
-	void Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
+	template<typename Derived_U>
+	void Minv_setU(Derived_U& U, double* l, int* ua) {
 		/*[Ki, U;]^(-1)
 		   UT, 0;      * r = z
 		   K1 = Ki^(-1)        */
+		Y.resize(U.rows(), U.cols());
+		double* u = new double[U.rows()];
+		double* y = new double[U.rows()];
+		Map<MatrixXd> u0(u, U.rows(), 1);
+		Map<MatrixXd> y0(y, U.rows(), 1);
+		for (int i = 0; i < U.cols(); ++i) {
+			u0 = U.col(i);
+			lus_cr(A.rows(), nnz, ia, ja, l, ua, u, y);
+			Y.col(i) = y0;
+		}
+		com_of_mul += nnz * U.cols();
+
+		v.noalias() = U.transpose() * Y;
+		com_of_mul += U.cols() * U.rows() * Y.cols();
+
+		v = v.inverse();
+		com_of_mul += v.cols() * v.cols() * v.cols() * 2 / 3 + 7 * v.cols() * v.cols() - v.cols() - v.cols();
+
+		delete[] u;
+		delete[] y;
+	}
+
+    /*
+	//给GMRES用的，给r左乘U对应的预处理矩阵
+	template<typename Derived_U, typename Derived_r, typename Derived_z>
+	void Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
+		//[Ki, U;]^(-1)
+		//  UT, 0;      * r = z
+		// K1 = Ki^(-1)        
 		z.topRows(K1.rows()) = K1 * r.topRows(K1.rows());
 		com_of_mul += K1.nonZeros();
 
-		z.bottomRows(U.cols()) = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(K1.rows()));
+		//TODO 是不是真的noalias
+		z.bottomRows(U.cols()).noalias() = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(K1.rows()));
 		com_of_mul += v.rows() * v.cols() + U.cols() * U.rows();
 
 		z.topRows(K1.rows()) -= Y * z.bottomRows(U.cols());
+		com_of_mul += Y.rows() * Y.cols();
+	}
+    */
+
+	template<typename Derived_U, typename Derived_r, typename Derived_z>
+	void Minv_mulU(Derived_U& U, Derived_r& r, Derived_z& z, double* l, int* ua) {
+		/*[Ki, U;]^(-1)
+		   UT, 0;      * r = z
+		   K1 = Ki^(-1)        */
+		double* r0 = new double[A.rows()];
+		double* z0 = new double[A.rows()];
+		Map<MatrixXd> R(r0, A.rows(), 1);
+		Map<MatrixXd> Z(z0, A.rows(), 1);
+		R = r.topRows(A.rows());
+		lus_cr(A.rows(), nnz, ia, ja, l, ua, r0, z0);
+		z.topRows(A.rows()) = Z;
+		com_of_mul += nnz;
+
+		z.bottomRows(U.cols()) = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(A.rows()));
+		com_of_mul += v.rows() * v.cols() + U.cols() * U.rows();
+
+		z.topRows(A.rows()) -= Y * z.bottomRows(U.cols());
 		com_of_mul += Y.rows() * Y.cols();
 	}
 	
@@ -65,7 +130,8 @@ public:
 		com_of_mul += U.cols() * U.rows();
 	}
 	
-	//左预处理GMRES，BJD特化版本
+	/*
+    //左预处理GMRES，BJD特化版本
 	template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
 	void L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
 		//(求解：（I-UUT）（A-λB）z = b)
@@ -121,6 +187,7 @@ public:
 				V.col(0) = r / beta;
 				com_of_mul += 2 * A.rows() + 2 * U.cols();
 
+				//错误就在这里，细心的你能看到吗？
 				for (int j = 0; j < m; ++j) {
 					A_mul(U, V.col(j), tpw);
 					Minv_mul(U, tpw, w);
@@ -173,7 +240,249 @@ public:
 			X.col(i) = x.topRows(A.rows());
 		}
 	}
-	
+    */
+
+    template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
+    void PMGMRES(Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam) {
+        CRSsubtrac(ia, ja, a, nnz, B, 0);
+
+        double av;
+        double* c;
+        double delta = 1.0e-03;
+        double* g;
+        double* h;
+        double htmp;
+        int i;
+        int itr;
+        int itr_used;
+        int j;
+        int k;
+        int k_copy;
+        double mu;
+        double* r;
+        double rho;
+        double rho_tol;
+        double* s;
+        double* v;
+        int verbose = 0;
+        double* y;
+        double* l;
+        int* ua;
+
+        int n = A.rows() + U.cols();
+        c = new double[gmres_size + 1];
+        g = new double[gmres_size + 1];
+        h = new double[(gmres_size + 1) * gmres_size];
+        r = new double[n];
+        s = new double[gmres_size + 1];
+        v = new double[(gmres_size + 1) * n];
+        y = new double[gmres_size + 1];
+        l = new double[ia[A.rows()] + 1];
+        ua = new int[A.rows()];
+
+        Map<MatrixXd> R(r, n, 1);
+        Map<MatrixXd> V(v, n, gmres_size + 1);
+        Map<MatrixXd> Y(y, gmres_size + 1, 1);
+
+        MatrixXd x(A.rows() + U.cols(), 1);
+        tmpA = A;
+        for (int index = 0; index < b.cols(); ++index) {
+            if (index == 0) {
+                CRSsubtrac(ia, ja, a, nnz, B, lam(0, 0));
+                tmpA -= lam(0, 0) * B;
+            }
+            else {
+                CRSsubtrac(ia, ja, a, nnz, B, lam(index, 0) - lam(index - 1, 0));
+                tmpA -= (lam(index, 0) - lam(index - 1, 0)) * B;
+            }
+
+            itr_used = 0;
+
+            x.topRows(A.rows()) = X.col(index);
+            x.bottomRows(U.cols()) = MatrixXd::Zero(U.cols(), 1);
+
+            diagonal_pointer_cr(A.rows(), nnz, ia, ja, ua);
+
+            ilu_cr(A.rows(), nnz, ia, ja, a, ua, l);
+            com_of_mul += 2 * tmpA.nonZeros();
+
+            Minv_setU(U, l, ua);
+            if (verbose)
+            {
+                cout << "\n";
+                cout << "PMGMRES_ILU_CR\n";
+                cout << "  Number of unknowns = " << n << "\n";
+            }
+
+            for (itr = 0; itr < gmres_restart; itr++)
+            {
+                A_mul(U, x, R);
+
+                R *= -1;
+                R.topRows(A.rows()) += b.col(index);
+                com_of_mul += A.rows();
+
+                Minv_mulU(U, R, R, l, ua);
+
+                //rho = sqrt(r8vec_dot(n, r, r));
+                rho = R.norm();
+
+                if (verbose)
+                {
+                    cout << "  ITR = " << itr << "  Residual = " << rho << "\n";
+                }
+
+                if (itr == 0)
+                {
+                    rho_tol = rho * LinearEigenSolver::ORTH_TOL;
+                }
+
+                V.col(0) = R / rho;
+
+                g[0] = rho;
+                for (i = 1; i < gmres_size + 1; i++)
+                {
+                    g[i] = 0.0;
+                }
+
+                for (i = 0; i < gmres_size + 1; i++)
+                {
+                    for (j = 0; j < gmres_size; j++)
+                    {
+                        h[i * (gmres_size)+j] = 0.0;
+                    }
+                }
+
+                for (k = 0; k < gmres_size; k++)
+                {
+                    k_copy = k;
+
+                    A_mul(U, V.col(k), V.col(k + 1));
+                    Minv_mulU(U, V.col(k + 1), V.col(k + 1), l, ua);
+
+                    //av = sqrt(r8vec_dot(n, v + (k + 1) * n, v + (k + 1) * n));
+                    av = V.col(k + 1).norm();
+                    com_of_mul += n;
+
+                    for (j = 0; j <= k; j++)
+                    {
+                        //h[j * gmres_size + k] = r8vec_dot(n, v + (k + 1) * n, v + j * n);
+                        h[j * gmres_size + k] = (V.col(k + 1).transpose() * V.col(j))(0, 0);
+                        V.col(k + 1) -= h[j * gmres_size + k] * V.col(j);
+                    }
+                    com_of_mul += n * (k + 1) * 2;
+
+                    //h[(k + 1) * gmres_size + k] = sqrt(r8vec_dot(n, v + (k + 1) * n, v + (k + 1) * n));
+                    h[(k + 1) * gmres_size + k] = V.col(k + 1).norm();
+                    com_of_mul += n;
+
+                    if ((av + delta * h[(k + 1) * gmres_size + k]) == av)
+                    {
+                        for (j = 0; j < k + 1; j++)
+                        {
+                            //htmp = r8vec_dot(n, v + (k + 1) * n, v + j * n);
+                            htmp = V.col(k + 1).transpose() * V.col(j);
+                            com_of_mul += n;
+
+                            h[j * gmres_size + k] = h[j * gmres_size + k] + htmp;
+                            V.col(k + 1) = V.col(k + 1) - htmp * V.col(j);
+                            com_of_mul += n;
+                        }
+                        //h[(k + 1) * gmres_size + k] = sqrt(r8vec_dot(n, v + (k + 1) * n, v + (k + 1) * n));
+                        h[(k + 1) * gmres_size + k] = V.col(k + 1).norm();
+                        com_of_mul += n;
+                    }
+
+                    if (h[(k + 1) * gmres_size + k] != 0.0)
+                    {
+                        V.col(k + 1) = V.col(k + 1) / h[(k + 1) * gmres_size + k];
+                        com_of_mul += 5 * n;
+                    }
+
+                    if (0 < k)
+                    {
+                        for (i = 0; i < k + 2; i++)
+                        {
+                            y[i] = h[i * gmres_size + k];
+                        }
+                        for (j = 0; j < k; j++)
+                        {
+                            mult_givens(c[j], s[j], j, y);
+                        }
+                        for (i = 0; i < k + 2; i++)
+                        {
+                            h[i * gmres_size + k] = y[i];
+                        }
+                    }
+                    mu = sqrt(h[k * gmres_size + k] * h[k * gmres_size + k] + h[(k + 1) * gmres_size + k] * h[(k + 1) * gmres_size + k]);
+                    c[k] = h[k * gmres_size + k] / mu;
+                    s[k] = -h[(k + 1) * gmres_size + k] / mu;
+                    h[k * gmres_size + k] = c[k] * h[k * gmres_size + k] - s[k] * h[(k + 1) * gmres_size + k];
+                    h[(k + 1) * gmres_size + k] = 0.0;
+                    mult_givens(c[k], s[k], k, g);
+
+                    rho = fabs(g[k + 1]);
+
+                    itr_used = itr_used + 1;
+
+                    if (verbose)
+                    {
+                        cout << "  K   = " << k << "  Residual = " << rho << "\n";
+                    }
+
+                    if (rho <= rho_tol && rho <= sqrt(LinearEigenSolver::ORTH_TOL))
+                    {
+                        break;
+                    }
+                }
+
+                k = k_copy;
+
+                y[k] = g[k] / h[k * gmres_size + k];
+                for (i = k - 1; 0 <= i; i--)
+                {
+                    y[i] = g[i];
+                    for (j = i + 1; j < k + 1; j++)
+                    {
+                        y[i] = y[i] - h[i * gmres_size + j] * y[j];
+                    }
+                    y[i] = y[i] / h[i * gmres_size + i];
+                }
+                com_of_mul += k * (k + 1) / 2;
+
+                x += V.leftCols(k + 1) * Y.topRows(k + 1);
+                com_of_mul += V.rows() * (k + 1);
+
+                if (rho <= rho_tol && rho <= sqrt(LinearEigenSolver::ORTH_TOL))
+                {
+                    break;
+                }
+            }
+
+            X.col(index) = x.topRows(A.rows());
+
+            if (verbose)
+            {
+                cout << "\n";;
+                cout << "PMGMRES_ILU_CR:\n";
+                cout << "  Iterations = " << itr_used << "\n";
+                cout << "  Final residual = " << rho << "\n";
+            }
+        }
+        CRSsubtrac(ia, ja, a, nnz, B, -lam(b.cols() - 1, 0));
+        //
+        //  Free memory.
+        //
+        delete[] c;
+        delete[] g;
+        delete[] h;
+        delete[] r;
+        delete[] s;
+        delete[] v;
+        delete[] y;
+        delete[] l;
+        delete[] ua;
+    }
 	void compute();
 };
 

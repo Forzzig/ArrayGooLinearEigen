@@ -10,7 +10,11 @@ public:
 	double* storage = NULL;
 	Map<MatrixXd, Unaligned, OuterStride<>> X, P, W;
 	MatrixXd Lam;
+
+	ConjugateGradient<SparseMatrix<double>, Lower | Upper> linearsolver;
+
 	LOBPCG_II_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch);
+	~LOBPCG_II_Batch();
 	void compute();
 };
 #endif
