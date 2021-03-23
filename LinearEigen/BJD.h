@@ -9,12 +9,14 @@ public:
 	int restart, gmres_size, gmres_restart, nRestart;
 	MatrixXd V, WA,/* WB, HA, HB, HAB,*/ H;
 	MatrixXd Y, v;
-	SparseMatrix<double, RowMajor> /*K1, */tmpA;
+	SparseMatrix<double, RowMajor> tmpA;
+    //vector<double> tmpAinv;
 	int batch;
 
-	int* ia, * ja;
-	double* a;
-	int nnz;
+    //ILU需要
+	//int* ia, * ja;
+	//double* a;
+	//int nnz;
 	void CRSsort(int* ia, int* ja, double* a, int n);
 	void genCRS(SparseMatrix<double, RowMajor>& A, int* ia, int* ja, double* a);
 
@@ -58,6 +60,8 @@ public:
 		/*[Ki, U;]^(-1)
 		   UT, 0;      * r = z
 		   K1 = Ki^(-1)        */
+
+        //ILU需要
 		Y.resize(U.rows(), U.cols());
 		double* u = new double[U.rows()];
 		double* y = new double[U.rows()];
@@ -80,30 +84,13 @@ public:
 		delete[] y;
 	}
 
-    /*
-	//给GMRES用的，给r左乘U对应的预处理矩阵
-	template<typename Derived_U, typename Derived_r, typename Derived_z>
-	void Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
-		//[Ki, U;]^(-1)
-		//  UT, 0;      * r = z
-		// K1 = Ki^(-1)        
-		z.topRows(K1.rows()) = K1 * r.topRows(K1.rows());
-		com_of_mul += K1.nonZeros();
-
-		//TODO 是不是真的noalias
-		z.bottomRows(U.cols()).noalias() = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(K1.rows()));
-		com_of_mul += v.rows() * v.cols() + U.cols() * U.rows();
-
-		z.topRows(K1.rows()) -= Y * z.bottomRows(U.cols());
-		com_of_mul += Y.rows() * Y.cols();
-	}
-    */
-
 	template<typename Derived_U, typename Derived_r, typename Derived_z>
 	void Minv_mulU(Derived_U& U, Derived_r& r, Derived_z& z, double* l, int* ua) {
 		/*[Ki, U;]^(-1)
 		   UT, 0;      * r = z
 		   K1 = Ki^(-1)        */
+
+        //ILU需要
 		double* r0 = new double[A.rows()];
 		double* z0 = new double[A.rows()];
 		Map<MatrixXd> R(r0, A.rows(), 1);
@@ -112,6 +99,43 @@ public:
 		lus_cr(A.rows(), nnz, ia, ja, l, ua, r0, z0);
 		z.topRows(A.rows()) = Z;
 		com_of_mul += nnz;
+        
+		z.bottomRows(U.cols()) = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(A.rows()));
+		com_of_mul += v.rows() * v.cols() + U.cols() * U.rows();
+
+		z.topRows(A.rows()) -= Y * z.bottomRows(U.cols());
+		com_of_mul += Y.rows() * Y.cols();
+
+        delete[] r0;
+        delete[] z0;
+	}
+	
+	template<typename Derived_U>
+	void Minv_set(Derived_U& U) {
+		/*[Ki, U;]^(-1)
+		   UT, 0;      * r = z
+		   K1 = Ki^(-1)        */
+
+		Y.resize(U.rows(), U.cols());
+		for (int i = 0; i < U.rows(); ++i)
+			Y.row(i).noalias() = U.row(i) * tmpAinv[i];
+		com_of_mul += U.rows() * U.cols();
+
+		v.noalias() = U.transpose() * Y;
+		com_of_mul += U.cols() * U.rows() * Y.cols();
+
+		v = v.inverse();
+		com_of_mul += v.cols() * v.cols() * v.cols() * 2 / 3 + 7 * v.cols() * v.cols() - v.cols() - v.cols();
+	}
+
+	template<typename Derived_U, typename Derived_r, typename Derived_z>
+	void Minv_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
+		/*[Ki, U;]^(-1)
+		   UT, 0;      * r = z
+		   K1 = Ki^(-1)        */
+
+		for (int i = 0; i < A.rows(); ++i)
+			z.row(i) = tmpAinv[i] * r.row(i);
 
 		z.bottomRows(U.cols()) = v * (r.bottomRows(U.cols()) + U.transpose() * z.topRows(A.rows()));
 		com_of_mul += v.rows() * v.cols() + U.cols() * U.rows();
@@ -119,7 +143,7 @@ public:
 		z.topRows(A.rows()) -= Y * z.bottomRows(U.cols());
 		com_of_mul += Y.rows() * Y.cols();
 	}
-	
+
 	//左乘A对应的增广矩阵
 	template<typename Derived_U, typename Derived_r, typename Derived_z>
 	void A_mul(Derived_U& U, Derived_r& r, Derived_z& z) {
@@ -244,7 +268,7 @@ public:
 
     template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
     void PMGMRES(Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam) {
-        CRSsubtrac(ia, ja, a, nnz, B, 0);
+        //CRSsubtrac(ia, ja, a, nnz, B, 0);
 
         double av;
         double* c;
@@ -266,8 +290,8 @@ public:
         double* v;
         int verbose = 0;
         double* y;
-        double* l;
-        int* ua;
+        //double* l;
+        //int* ua;
 
         int n = A.rows() + U.cols();
         c = new double[gmres_size + 1];
@@ -277,8 +301,8 @@ public:
         s = new double[gmres_size + 1];
         v = new double[(gmres_size + 1) * n];
         y = new double[gmres_size + 1];
-        l = new double[ia[A.rows()] + 1];
-        ua = new int[A.rows()];
+        //l = new double[ia[A.rows()] + 1];
+        //ua = new int[A.rows()];
 
         Map<MatrixXd> R(r, n, 1);
         Map<MatrixXd> V(v, n, gmres_size + 1);
@@ -288,25 +312,32 @@ public:
         tmpA = A;
         for (int index = 0; index < b.cols(); ++index) {
             if (index == 0) {
-                CRSsubtrac(ia, ja, a, nnz, B, lam(0, 0));
+                //CRSsubtrac(ia, ja, a, nnz, B, lam(0, 0));
                 tmpA -= lam(0, 0) * B;
             }
             else {
-                CRSsubtrac(ia, ja, a, nnz, B, lam(index, 0) - lam(index - 1, 0));
+                //CRSsubtrac(ia, ja, a, nnz, B, lam(index, 0) - lam(index - 1, 0));
                 tmpA -= (lam(index, 0) - lam(index - 1, 0)) * B;
             }
+            //for (int row = 0; row < A.rows(); ++row) {
+            //    double diag = tmpA.coeff(row, row);
+            //    if (abs(diag) > ORTH_TOL)
+            //        tmpAinv[row] = 1.0 / diag;
+            //    else
+            //        tmpAinv[row] = ((diag < 0) ? -1.0 : 1.0) / ORTH_TOL;
+            //}
 
             itr_used = 0;
 
             x.topRows(A.rows()) = X.col(index);
             x.bottomRows(U.cols()) = MatrixXd::Zero(U.cols(), 1);
 
-            diagonal_pointer_cr(A.rows(), nnz, ia, ja, ua);
-
-            ilu_cr(A.rows(), nnz, ia, ja, a, ua, l);
+            //ILU分解
+            //diagonal_pointer_cr(A.rows(), nnz, ia, ja, ua);
+            //ilu_cr(A.rows(), nnz, ia, ja, a, ua, l);
             com_of_mul += 2 * tmpA.nonZeros();
 
-            Minv_setU(U, l, ua);
+            //Minv_set(U);
             if (verbose)
             {
                 cout << "\n";
@@ -322,7 +353,7 @@ public:
                 R.topRows(A.rows()) += b.col(index);
                 com_of_mul += A.rows();
 
-                Minv_mulU(U, R, R, l, ua);
+                //Minv_mul(U, R, R);
 
                 //rho = sqrt(r8vec_dot(n, r, r));
                 rho = R.norm();
@@ -358,7 +389,7 @@ public:
                     k_copy = k;
 
                     A_mul(U, V.col(k), V.col(k + 1));
-                    Minv_mulU(U, V.col(k + 1), V.col(k + 1), l, ua);
+                    //Minv_mul(U, V.col(k + 1), V.col(k + 1));
 
                     //av = sqrt(r8vec_dot(n, v + (k + 1) * n, v + (k + 1) * n));
                     av = V.col(k + 1).norm();
@@ -469,7 +500,7 @@ public:
                 cout << "  Final residual = " << rho << "\n";
             }
         }
-        CRSsubtrac(ia, ja, a, nnz, B, -lam(b.cols() - 1, 0));
+        //CRSsubtrac(ia, ja, a, nnz, B, -lam(b.cols() - 1, 0));
         //
         //  Free memory.
         //
@@ -480,8 +511,8 @@ public:
         delete[] s;
         delete[] v;
         delete[] y;
-        delete[] l;
-        delete[] ua;
+        //delete[] l;
+        //delete[] ua;
     }
 	void compute();
 };

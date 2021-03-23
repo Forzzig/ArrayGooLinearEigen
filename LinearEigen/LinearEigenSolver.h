@@ -30,7 +30,7 @@ public:
 	
 	template <typename Derived, typename Derived_val, typename Derived_vec>
 	void projection_RR(Derived& V, SparseMatrix<double, RowMajor>& A, Derived_val& eigenvalues, Derived_vec& eigenvectors) {
-		MatrixXd tmpA;
+		MatrixXd tmpA(A.rows(), V.cols());
 		tmpA.noalias() = A * V;
 		tmpA.applyOnTheLeft(V.transpose());
 		com_of_mul += A.nonZeros() * V.cols() + V.cols() * A.rows() * V.cols();
@@ -103,7 +103,7 @@ public:
 
 	template<typename Derived_val, typename Derived_vec, typename Out_val, typename Out_vec>
 	int conv_select(Derived_val& eval, Derived_vec& evec, double shift, Out_val& valout, Out_vec& vecout) {
-		VectorXd tmp, tmpA, tmpB;
+		VectorXd tmp(A.rows()), tmpA(A.rows()), tmpB(A.rows());
 		int flag = LinearEigenSolver::CHECKNUM;
 		int prev = eigenvectors.cols();
 		int goon = 0;

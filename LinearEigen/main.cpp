@@ -22,7 +22,7 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-//#define mLOBPCG_I
+#define mLOBPCG_I
 #define mLOBPCG_II
 #define miRitz
 #define mBJD
@@ -35,7 +35,7 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	/*"bcsstk01",
+{	"bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
@@ -52,10 +52,10 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus",*/
+	"1138_bus",
 
 	"sym-pos/apache1",
-	/*"sym-pos/ct20stif",
+	"sym-pos/ct20stif",
 	"sym-pos/oilpan",
 	"sym-pos/apache2",
 	"sym-pos/shipsec8",
@@ -79,7 +79,7 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"*/
+	"sym-pos/Flan_1565"
 };
 
 int main() {

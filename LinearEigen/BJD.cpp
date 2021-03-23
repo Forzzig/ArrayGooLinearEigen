@@ -9,7 +9,8 @@ BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, i
 	batch(batch),
 	V(A.rows(), batch* restart),
 	WA(A.rows(), batch* restart),
-	H(batch* restart, batch* restart) {
+	H(batch* restart, batch* restart)/*,
+	tmpAinv(A.rows()) */{
 
 	Map<MatrixXd> V1(&V(0, 0), A.rows(), batch);
 	V1 = MatrixXd::Random(A.rows(), batch);
@@ -29,18 +30,20 @@ BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, i
 	HAB.block(0, 0, batch, batch) = W1.transpose() * W2;*/
 	H.block(0, 0, batch, batch) = W1.transpose() * V1;
     
-    ia = new int[A.rows() + 1];
-    ja = new int[A.nonZeros()];
-    a = new double[A.nonZeros()];
+	//ILU需要
+    //ia = new int[A.rows() + 1];
+    //ja = new int[A.nonZeros()];
+    //a = new double[A.nonZeros()];
 
-    nnz = A.nonZeros();
-    genCRS(A, ia, ja, a);
+    //nnz = A.nonZeros();
+    //genCRS(A, ia, ja, a);
 }
 
 BJD::~BJD() {
-    delete[] ia;
-    delete[] ja;
-    delete[] a;
+	//ILU需要
+    //delete[] ia;
+    //delete[] ja;
+    //delete[] a;
 }
 
 void BJD::genCRS(SparseMatrix<double, RowMajor>& A, int* ia, int* ja, double* a) {
@@ -173,11 +176,14 @@ void BJD::CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<doub
 }
 
 void BJD::compute() {
-	MatrixXd eval, evec, ui, ri;
+	VectorXd eval(restart * batch);
+	MatrixXd evec(restart * batch, restart * batch), ui(A.rows(), batch), ri(A.rows(), batch);
 	Map<MatrixXd> Vj(&V(0, 0), A.rows(), batch);
 	Map<MatrixXd> WAj(&WA(0, 0), A.rows(), batch);
 	/*Map<MatrixXd> WBj(&WB(0, 0), A.rows(), batch);*/
 
+	Map<MatrixXd> X(&V(0, Vj.cols()), A.rows(), ri.cols());
+	Map<MatrixXd> tmpWA(&WA(0, Vj.cols()), A.rows(), X.cols());
 	MatrixXd tmpeval(batch, 1), tmpevec(A.rows(), batch);
 	int nd = batch;
 	/*long long t1, t2;
@@ -200,10 +206,15 @@ void BJD::compute() {
 			//tRR += t2 - t1;
 
 			//注意eval长度是偏长的
-			ui = Vj * evec.leftCols(nd);
+			if (ui.cols() != nd)
+				ui.resize(NoChange, nd);
+			ui.noalias() = Vj * evec.leftCols(nd);
 			com_of_mul += A.rows() * Vj.cols() * nd;
 
-			ri = B * ui;
+			if (ri.cols() != ui.cols())
+				ri.resize(NoChange, ui.cols());
+			ri.noalias() = B * ui;
+#pragma omp parallel for
 			for (int j = 0; j < ri.cols(); ++j) {
 				ri.col(j) *= eval(j, 0);
 			}
@@ -228,7 +239,7 @@ void BJD::compute() {
 			if (timeCheck(start_time, now))
 				break;
 
-			Map<MatrixXd> X(&V(0, Vj.cols()), A.rows(), ri.cols());
+			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols());
 			X = MatrixXd::Zero(A.rows(), ri.cols());
 
 			//L_GMRES(A, B, ri, ui, X, eval, gmres_size);
@@ -246,8 +257,8 @@ void BJD::compute() {
 			//tOrt += t1 - t2;
 
 			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols() - dep);
-			Map<MatrixXd> tmpWA(&WA(0, Vj.cols()), A.rows(), X.cols());
-			tmpWA = A * X;
+			new (&tmpWA) Map<MatrixXd>(&WA(0, Vj.cols()), A.rows(), X.cols());
+			tmpWA.noalias() = A * X;
 			com_of_mul += A.nonZeros() * X.cols();
 
 			//t2 = clock();
@@ -265,9 +276,9 @@ void BJD::compute() {
 			HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WBj;
 			HAB.block(0, Vj.cols(), Vj.cols(), X.cols()) = HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
 			HAB.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * tmpWB;*/
-			H.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * Vj;
+			H.block(Vj.cols(), 0, X.cols(), Vj.cols()).noalias() = tmpWA.transpose() * Vj;
 			H.block(0, Vj.cols(), Vj.cols(), X.cols()) = H.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
-			H.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * X;
+			H.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()).noalias() = tmpWA.transpose() * X;
 			com_of_mul += X.cols() * A.rows() * Vj.cols() + X.cols() * A.rows() * X.cols();
 
 			//t1 = clock();
@@ -289,21 +300,20 @@ void BJD::compute() {
 		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);
 		Vj.leftCols(left) = tmpevec.leftCols(left);
 		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);
-		if (eigenvalues.size() > 0)
-			orthogonalization(Vj, Map<MatrixXd>(&eigenvectors(0, 0), A.rows(), eigenvalues.size()), B);
+		orthogonalization(Vj, eigenvectors, B);
 		orthogonalization(Vj, B);
 		
 		new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), Vj.cols());
 		/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), Vj.cols());*/
 
-		WAj = A * Vj;
+		WAj.noalias() = A * Vj;
 		com_of_mul += A.nonZeros() * Vj.cols();
 
 		/*WBj = B * Vj;
 		HA.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * WAj;
 		HB.block(0, 0, Vj.cols(), Vj.cols()) = WBj.transpose() * WBj;
 		HAB.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * WBj;*/
-		H.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * Vj;
+		H.block(0, 0, Vj.cols(), Vj.cols()).noalias() = WAj.transpose() * Vj;
 		com_of_mul += Vj.cols() * A.rows() * Vj.cols();
 	}
 	/*cout << "RR   , Cnv   , GMR   , Ort   , AX   , H" << endl;
