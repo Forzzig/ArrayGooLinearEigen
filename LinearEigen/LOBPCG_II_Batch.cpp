@@ -161,7 +161,7 @@ void LOBPCG_II_Batch::compute() {
 		X.rightCols(X.cols() - xwid) = MatrixXd::Random(A.rows(), X.cols() - xwid);
 
 		orthogonalization(X, eigenvectors, B);
-		int dep = orthogonalization(X, B);
+		dep = orthogonalization(X, B);
 		while (dep) {
 			X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
 			dep = orthogonalization(X, B);
