@@ -14,7 +14,11 @@ BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, i
 
 	Map<MatrixXd> V1(&V(0, 0), A.rows(), batch);
 	V1 = MatrixXd::Random(A.rows(), batch);
-	orthogonalization(V1, B);
+	int dep = orthogonalization(V1, B);
+	while (dep) {
+		V1.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+		dep = orthogonalization(V1, B);
+	}
 	
 	Map<MatrixXd> W1(&WA(0, 0), A.rows(), batch);
 	W1 = A * V1;
@@ -301,7 +305,11 @@ void BJD::compute() {
 		Vj.leftCols(left) = tmpevec.leftCols(left);
 		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);
 		orthogonalization(Vj, eigenvectors, B);
-		orthogonalization(Vj, B);
+		int dep = orthogonalization(Vj, B);
+		while (dep) {
+			Vj.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+			dep = orthogonalization(Vj, B);
+		}
 		
 		new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), Vj.cols());
 		/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), Vj.cols());*/

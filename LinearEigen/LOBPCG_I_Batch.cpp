@@ -14,7 +14,11 @@ LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix<d
 	cgstep(cgstep){
 
 	X = MatrixXd::Random(A.rows(), batch);
-	orthogonalization(X, B);
+	int dep = orthogonalization(X, B);
+	while (dep) {
+		X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+		dep = orthogonalization(X, B);
+	}
 	cout << "X初始化" << endl;
 
 	//TODO 只有要求解的矩阵不变时才能在这初始化
@@ -118,7 +122,11 @@ void LOBPCG_I_Batch::compute() {
 			new (&W) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), wid);
 		}
 		orthogonalization(X, eigenvectors, B);
-		orthogonalization(X, B);
+		dep = orthogonalization(X, B);
+		while (dep) {
+			X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+			dep = orthogonalization(X, B);
+		}
 
 		if ((P.cols() != BX.cols()) || (&P(0, 0) != storage + A.rows() * (X.cols() + W.cols()))) 
 			new (&P) Map<MatrixXd>(storage + A.rows() * (X.cols() + W.cols()), A.rows(), BX.cols());

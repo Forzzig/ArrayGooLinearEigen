@@ -7,7 +7,11 @@ Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B,
 	cgstep(cgstep),
 	X(MatrixXd::Random(A.rows(), q)) {
 	
-	orthogonalization(X, B);
+	int dep = orthogonalization(X, B);
+	while (dep) {
+		X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+		dep = orthogonalization(X, B);
+	}
 	MatrixXd evec;
 	projection_RR(X, A, LAM, evec);
 	X *= evec;

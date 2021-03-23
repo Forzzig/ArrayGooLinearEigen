@@ -13,7 +13,12 @@ LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix
 	cgstep(cgstep){
 
 	X = MatrixXd::Random(A.rows(), batch);
-	orthogonalization(X, B);
+	int dep = orthogonalization(X, B);
+	while (dep) {
+		X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+		dep = orthogonalization(X, B);
+	}
+
 	VectorXd tmp(A.rows(), 1);
 	for (int i = 0; i < X.cols(); ++i) {
 		tmp = A * X.col(i);
@@ -156,7 +161,12 @@ void LOBPCG_II_Batch::compute() {
 		X.rightCols(X.cols() - xwid) = MatrixXd::Random(A.rows(), X.cols() - xwid);
 
 		orthogonalization(X, eigenvectors, B);
-		orthogonalization(X, B); //TODO 应该不会有相关列
+		int dep = orthogonalization(X, B);
+		while (dep) {
+			X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+			dep = orthogonalization(X, B);
+		}
+
 //#pragma omp parallel for
 		for (int i = 0; i < xwid; ++i)
 			memcpy(&P(0, i), &BX(0, cnv - prev + i), A.rows() * sizeof(double));

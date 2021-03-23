@@ -10,7 +10,12 @@ IterRitz::IterRitz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMa
 	P(A.rows(), 0),
 	Lam(q, 1) {
 	
-	orthogonalization(X, B);
+	int dep = orthogonalization(X, B);
+	while (dep) {
+		X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
+		dep = orthogonalization(X, B);
+	}
+
 	MatrixXd evec;
 	projection_RR(X, A, Lam, evec);
 	X *= evec;
@@ -124,9 +129,7 @@ void IterRitz::compute() {
 			break;
 
 		if (nd - (cnv - prev) < X.cols())
-			X.conservativeResize(A.rows(), nd - (cnv - prev));
-		orthogonalization(X, eigenvectors, B);
-		orthogonalization(X, B);
+			X.conservativeResize(NoChange, nd - (cnv - prev));
 	}
 	finish();
 }
