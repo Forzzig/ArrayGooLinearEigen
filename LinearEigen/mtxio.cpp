@@ -1,9 +1,9 @@
 #include<mtxio.h>
 
-SparseMatrix<double>& mtxio::getSparseMatrix(string filename, string filepath) {
+SparseMatrix<double, RowMajor>& mtxio::getSparseMatrix(string filename, string filepath) {
         return mtxio::getSparseMatrix(filepath + filename);
     }
-SparseMatrix<double>& mtxio::getSparseMatrix(string filename) {
+SparseMatrix<double, RowMajor>& mtxio::getSparseMatrix(string filename) {
         
         ifstream fin(filename);
         int M, N, L;
@@ -14,8 +14,8 @@ SparseMatrix<double>& mtxio::getSparseMatrix(string filename) {
         fin >> M >> N >> L;
         // Eigen::setNbThreads(8);
 
-        SparseMatrix<double>* mat = new SparseMatrix<double>;
-        SparseMatrix<double>& matrix = *mat;
+        SparseMatrix<double, RowMajor>* mat = new SparseMatrix<double, RowMajor>;
+        SparseMatrix<double, RowMajor>& matrix = *mat;
         matrix.resize(M, N);
         matrix.reserve(L * 2 - M);
         vector<Eigen::Triplet<double>> triple;

@@ -8,12 +8,12 @@ double LinearEigenSolver::EIGTOL = 1e-3;
 int LinearEigenSolver::CHECKNUM = 1;
 ofstream LinearEigenSolver::coutput("coutput.txt", ios::out);
 
-LinearEigenSolver::LinearEigenSolver(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev)
+LinearEigenSolver::LinearEigenSolver(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev)
 	: A(A),
 	B(B), 
 	nev(nev), 
 	nIter(0),
-	eigenvectors(A.rows(), 0),
+	eigenvectors(A.rows(), nev),
 	com_of_mul(0), 
 	start_time(time(NULL)),
 	end_time(LLONG_MAX){

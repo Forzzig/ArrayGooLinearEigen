@@ -1,7 +1,7 @@
 #include<LOBPCG_I_Batch.h>
 
 using namespace std;
-LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int batch)
+LOBPCG_I_Batch::LOBPCG_I_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int batch)
 	: LinearEigenSolver(A, B, nev),
 	//摆放顺序：XWP
 	storage(new double[A.rows() * batch * 3]),
@@ -30,7 +30,7 @@ LOBPCG_I_Batch::~LOBPCG_I_Batch() {
 }
 
 void LOBPCG_I_Batch::compute() {
-	MatrixXd eval, evec, tmp, Xnew, AX, BX, AWP;
+	MatrixXd eval(batch, 1), evec(batch, batch), AX(A.rows(), batch), BX(A.rows(), batch), AWP(A.rows(), batch), Xnew(A.rows(), 2 * batch);
 
 	//所有已计算出来的特征向量和待计算的都依次存在storage里，避免内存拷贝
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
@@ -38,54 +38,66 @@ void LOBPCG_I_Batch::compute() {
 	while (true) {
 		++nIter;
 		cout << "迭代步：" << nIter << endl;
-		AX = A * X;
+
+		if (AX.cols() != X.cols()) 
+			AX.resize(NoChange, X.cols());
+		AX.noalias() = A * X;
 		com_of_mul += A.nonZeros() * X.cols();
 
-		BX = B * X;
+		if (BX.cols() != X.cols())
+			BX.resize(NoChange, X.cols());
+		BX.noalias() = B * X;
 		com_of_mul += B.nonZeros() * X.cols();
 		
-		H.block(0, 0, X.cols(), X.cols()) = X.transpose() * AX;
+		H.block(0, 0, X.cols(), X.cols()).noalias() = X.transpose() * AX;
 		com_of_mul += X.cols() * A.rows() * X.cols();
 
-		tmp = BX;
+#pragma omp parallel for
 		for (int i = 0; i < X.cols(); ++i) {
-			tmp.col(i) *= H(i, i);
+			BX.col(i) *= H(i, i);
 		}
 		com_of_mul += A.rows() * X.cols();
 
 		//求解 A*W = A*X - mu*B*X， X为上一步的近似特征向量
-		W = linearsolver.solve(AX - tmp);
+		W = linearsolver.solve(AX - BX);
 		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
 			cgstep * (A.nonZeros() + 7 * A.rows()));
 
-		//预存上一步的近似特征向量
-		tmp = X;
+		//预存上一步的近似特征向量，BX废物利用
+		memcpy(&BX(0, 0), &X(0, 0), X.rows() * X.cols() * sizeof(double));
+		//BX = X;
 
-		new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols());
+		if ((WP.cols() != W.cols() + P.cols()) || (&WP(0, 0) != storage + A.rows() * X.cols()))
+			new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols());
 		orthogonalization(WP, eigenvectors, B);
 		orthogonalization(WP, X, B);
 
 		int dep = orthogonalization(WP, B);
 
 		//正交化后会有线性相关项，剔除
-		new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols() - dep);
-		AWP = A * WP;
+		if (dep)
+			new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), W.cols() + P.cols() - dep);
+
+		if (AWP.cols() != WP.cols())
+			AWP.resize(NoChange, WP.cols());
+		AWP.noalias() = A * WP;
 		com_of_mul += A.nonZeros() * WP.cols();
 
-		H.block(0, X.cols(), X.cols(), WP.cols()) = X.transpose() * AWP;
+		H.block(0, X.cols(), X.cols(), WP.cols()).noalias() = X.transpose() * AWP;
 		H.block(X.cols(), 0, WP.cols(), X.cols()) = H.block(0, X.cols(), X.cols(), WP.cols()).transpose();
 		com_of_mul += X.cols() * A.rows() * WP.cols();
 
-		H.block(X.cols(), X.cols(), WP.cols(), WP.cols()) = WP.transpose() * AWP;
+		H.block(X.cols(), X.cols(), WP.cols(), WP.cols()).noalias() = WP.transpose() * AWP;
 		com_of_mul += WP.cols() * A.rows() * WP.cols();
 
-		new (&V) Map<MatrixXd>(storage, A.rows(), X.cols() + WP.cols());
+		if (V.cols() != X.cols() + WP.cols()) 
+			new (&V) Map<MatrixXd>(storage, A.rows(), X.cols() + WP.cols());
 
 		RR(H.block(0, 0, V.cols(), V.cols()), eval, evec);
 
 		//子空间V投影下的新的近似特征向量
 		int nd = (2 * batch < V.cols()) ? 2 * batch : V.cols();
-		Xnew = V * evec.block(0, 0, V.cols(), nd);
+		Xnew.leftCols(nd) = V * evec.leftCols(nd);
 		com_of_mul += A.rows() * V.cols() * nd;
 
 		system("cls");
@@ -108,8 +120,10 @@ void LOBPCG_I_Batch::compute() {
 		orthogonalization(X, eigenvectors, B);
 		orthogonalization(X, B);
 
-		new (&P) Map<MatrixXd>(storage + A.rows() * (X.cols() + W.cols()), A.rows(), tmp.cols());
-		P = tmp;
+		if ((P.cols() != BX.cols()) || (&P(0, 0) != storage + A.rows() * (X.cols() + W.cols()))) 
+			new (&P) Map<MatrixXd>(storage + A.rows() * (X.cols() + W.cols()), A.rows(), BX.cols());
+		memcpy(&P(0, 0), &BX(0, 0), A.rows() * BX.cols() * sizeof(double));
+		//P = BX;
 	}
 	finish();
 }

@@ -1,6 +1,6 @@
 #include<Ritz.h>
 
-Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r)
+Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -11,24 +11,25 @@ Ritz::Ritz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep
 	MatrixXd evec;
 	projection_RR(X, A, LAM, evec);
 	X *= evec;
-	linearsolver.compute(A);
+
+	//A为RowMajor，利用对称性获取一个ColMajor稀疏矩阵
+	linearsolver.compute(A.transpose());
 		
 #ifndef DIRECT
 	linearsolver.setMaxIterations(cgstep);
 #else
 	SparseMatrix<double> L = linearsolver.matrixL();
+	L_nnz = L.nonZeros();
 	long long* bandwidth = new long long[A.rows()];
 	memset(bandwidth, 0, sizeof(long long) * A.rows());
 	for (int k = 0; k < L.cols(); ++k)
-		for (SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+		for (SparseMatrix<double, RowMajor>::InnerIterator it(L, k); it; ++it)
 			++bandwidth[it.row()];
 	
 	for (int k = 0; k < A.rows(); ++k)
 		com_of_mul += bandwidth[k] * (bandwidth[k] - 1) / 2;
 
 	com_of_mul += 5 * L.nonZeros() + A.nonZeros();
-	/*for (int i = 0; i < A.rows(); ++i)
-		coutput << bandwidth[i] << endl;*/
 	delete[] bandwidth;
 #endif // !DIRECT
 
@@ -40,7 +41,7 @@ void Ritz::compute() {
 	double shift = 0;
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
-	SparseMatrix<double> tmpA;
+	SparseMatrix<double, RowMajor> tmpA;
 	V.resize(A.rows(), q * (r + 1));
 	P.resize(A.rows(), 0);
 	Map<MatrixXd> X0(&X(0, 0), A.rows(), q);
@@ -69,7 +70,7 @@ void Ritz::compute() {
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 #else
 			X1 = linearsolver.solve(tmp);
-			com_of_mul += 2 * L.nonZeros() + 5 * A.rows();
+			com_of_mul += 2 * L_nnz + 5 * A.rows();
 #endif // !DIRECT
 
 			orthogonalization(X1, eigenvectors, B);

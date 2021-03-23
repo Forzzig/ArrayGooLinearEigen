@@ -1,6 +1,6 @@
 #include<IterRitz.h>
 
-IterRitz::IterRitz(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r)
+IterRitz::IterRitz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -47,7 +47,7 @@ void IterRitz::compute() {
 
 			X1 = linearsolver.solve(BX - AX);
 			com_of_mul += BX.cols() * (A.nonZeros() + 4 * A.rows() +
-				cgstep * (A.nonZeros() + 7 * A.rows()));
+				cgstep * (2 * A.nonZeros() + 6 * A.rows()));
 
 			realX += X1;
 

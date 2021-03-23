@@ -22,7 +22,7 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-#define mLOBPCG_I
+//#define mLOBPCG_I
 #define mLOBPCG_II
 #define miRitz
 #define mBJD
@@ -35,7 +35,7 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	"bcsstk01",
+{	/*"bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
@@ -52,10 +52,10 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus",
+	"1138_bus",*/
 
 	"sym-pos/apache1",
-	"sym-pos/ct20stif",
+	/*"sym-pos/ct20stif",
 	"sym-pos/oilpan",
 	"sym-pos/apache2",
 	"sym-pos/shipsec8",
@@ -79,10 +79,12 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"
+	"sym-pos/Flan_1565"*/
 };
 
 int main() {
+
+	Eigen::initParallel();
 
 	int n_matrices = 0;
 	string method;
@@ -143,18 +145,19 @@ int main() {
 		{30, 20, 0, 3},
 		{30, 30, 0, 3}
 	};
+
 	while (matrices[n_matrices].length() != 0) {
 		
 		//读A矩阵
 		string matrixName = matrices[n_matrices];
-		SparseMatrix<double> A;
+		SparseMatrix<double, RowMajor> A;
 		if (matrixName.length() > 0)
 			A = mtxio::getSparseMatrix("./matrix/" + matrixName + ".mtx");
 		else
 			A = mtxio::getSparseMatrix("./matrix/bcsstk01.mtx");
 
 		//TODO B先用单位阵
-		SparseMatrix<double> B(A.rows(), A.cols());
+		SparseMatrix<double, RowMajor> B(A.rows(), A.cols());
 		B.reserve(A.rows());
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
@@ -179,7 +182,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 						
-			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep)
 			LP1result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
@@ -222,7 +225,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 
-			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep)
+			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep)
 			LP2result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
@@ -268,7 +271,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 			
-			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r) 
 			IRresult << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			IterRitz iritz(A, B, nev, cgstep, batch, r);
@@ -314,7 +317,7 @@ int main() {
 			if (A.rows() / gmres_size < 2)
 				continue;
 								
-			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)
+			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)
 			BJDresult << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			BJD bjd(A, B, nev, restart, batch, gmres_size, 1);
@@ -359,7 +362,7 @@ int main() {
 			if (A.rows() / (batch * r) < 2)
 				continue;
 	
-			//(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int cgstep, int q, int r) 
+			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r) 
 			Ritzresult << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);

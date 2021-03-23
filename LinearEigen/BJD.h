@@ -9,18 +9,18 @@ public:
 	int restart, gmres_size, gmres_restart, nRestart;
 	MatrixXd V, WA,/* WB, HA, HB, HAB,*/ H;
 	MatrixXd Y, v;
-	SparseMatrix<double> /*K1, */tmpA;
+	SparseMatrix<double, RowMajor> /*K1, */tmpA;
 	int batch;
 
 	int* ia, * ja;
 	double* a;
 	int nnz;
 	void CRSsort(int* ia, int* ja, double* a, int n);
-	void genCRS(SparseMatrix<double>& A, int* ia, int* ja, double* a);
+	void genCRS(SparseMatrix<double, RowMajor>& A, int* ia, int* ja, double* a);
 
-	void CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double>& B, double eff);
+	void CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double, RowMajor>& B, double eff);
 
-	BJD(SparseMatrix<double>& A, SparseMatrix<double>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart);
+	BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart);
 	~BJD();
 
     /*
@@ -133,7 +133,7 @@ public:
 	/*
     //左预处理GMRES，BJD特化版本
 	template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
-	void L_GMRES(SparseMatrix<double>& A, SparseMatrix<double>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
+	void L_GMRES(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
 		//(求解：（I-UUT）（A-λB）z = b)
 		K1.resize(A.rows(), A.cols());
 		K1.reserve(A.rows());
