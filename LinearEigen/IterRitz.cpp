@@ -27,7 +27,8 @@ IterRitz::IterRitz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMa
 
 void IterRitz::compute() {
 	double shift = 0;
-	MatrixXd eval(q * (r + 1), 1), evec(q * (r + 1), q * (r + 1)), Xnew(A.rows(), 2 * q), BX(A.rows(), q), realX(A.rows(), q), AX(A.rows(), q);
+	VectorXd eval(q * (r + 1));
+	MatrixXd evec(q * (r + 1), q * (r + 1)), Xnew(A.rows(), 2 * q), BX(A.rows(), q), realX(A.rows(), q), AX(A.rows(), q);
 	Map<MatrixXd> X1(&V(0, 0), A.rows(), X.cols());
 	Map<MatrixXd> V0(&V(0, 0), A.rows(), 0);
 	while (true) {
@@ -38,35 +39,35 @@ void IterRitz::compute() {
 		new (&X1) Map<MatrixXd>(&V(0, 0), A.rows(), X.cols());
 		new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), 0);
 
-		memcpy(&realX(0, 0), &X(0, 0), A.rows() * X.cols() * sizeof(double));
-		//realX = X;
-		
+		if (realX.cols() != X.cols())
+			realX.resize(NoChange, X.cols());
 		if (BX.cols() != realX.cols())
 			BX.resize(NoChange, realX.cols());
-		BX.noalias() = B * realX;
-		com_of_mul += B.nonZeros() * realX.cols();
-
 		if (AX.cols() != realX.cols())
 			AX.resize(NoChange, realX.cols());
-		AX.noalias() = A * realX;
+
+#pragma omp parallel for
+		for (int i = 0; i < X.cols(); ++i) {
+			memcpy(&realX(0, i), &X(0, i), A.rows() * sizeof(double));
+			BX.col(i).noalias() = B * realX.col(i);
+			AX.col(i).noalias() = A * realX.col(i);
+		}
+		com_of_mul += B.nonZeros() * realX.cols();
 		com_of_mul += realX.cols() * A.nonZeros();
 
 		for (int i = 0; i < r; ++i) {
 #pragma omp parallel for
-			for (int j = 0; j < BX.cols(); ++j) {
-				BX.col(j) *= Lam(j, 0);
+			for (int j = 0; j < realX.cols(); ++j) {
+				memset(&X1(0, j), 0, A.rows() * sizeof(double));
+				linearsolver._solveWithGuess(BX.col(j) * Lam(j, 0) - AX.col(j), X1.col(j));
+				realX.col(j) += X1.col(j);
+
+				if (i == 0)
+					memcpy(&X1(0, j), &realX(0, j), A.rows() * sizeof(double));
 			}
 			com_of_mul += A.rows() * BX.cols();
-
-			X1 = linearsolver.solve(BX - AX);
 			com_of_mul += BX.cols() * (A.nonZeros() + 4 * A.rows() +
 				cgstep * (A.nonZeros() + 7 * A.rows()));
-
-			realX += X1;
-
-			if (i == 0)
-				memcpy(&X1(0, 0), &realX(0, 0), A.rows() * realX.cols() * sizeof(double));
-				//X1 = realX;
 
 			orthogonalization(X1, eigenvectors, B);
 			orthogonalization(X1, V0, B);
@@ -77,16 +78,17 @@ void IterRitz::compute() {
 			if (i < r - 1) {
 				if (BX.cols() != realX.cols())
 					BX.resize(NoChange, realX.cols());
-				BX.noalias() = B * realX;
-				com_of_mul += B.nonZeros() * realX.cols();
-
 				if (AX.cols() != realX.cols())
 					AX.resize(NoChange, realX.cols());
-				AX.noalias() = A * realX;
-				com_of_mul += realX.cols() * A.nonZeros();
 
-				for (int j = 0; j < BX.cols(); ++j)
+#pragma omp parallel for
+				for (int j = 0; j < realX.cols(); ++j) {
+					BX.col(j).noalias() = B * realX.col(j);
+					AX.col(j).noalias() = A * realX.col(j);
 					Lam(j, 0) = realX.col(j).dot(AX.col(j)) / realX.col(j).dot(BX.col(j));
+				}
+				com_of_mul += B.nonZeros() * realX.cols();
+				com_of_mul += realX.cols() * A.nonZeros();
 				com_of_mul += 2 * A.rows() * BX.cols();
 			}
 		}
@@ -101,6 +103,7 @@ void IterRitz::compute() {
 		orthogonalization(X1, V0, B);
 		int dep = orthogonalization(X1, B);
 		new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
+		
 		projection_RR(V0, A, eval, evec);
 
 		int nd = (2 * q < V0.cols()) ? 2 * q : V0.cols();
@@ -117,7 +120,6 @@ void IterRitz::compute() {
 		system("cls");
 		int prev = eigenvalues.size();
 		int cnv = conv_select(eval, Xnew, shift, Lam, X);
-
 		cout << "IterRitz已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev) {

@@ -38,9 +38,11 @@ LOBPCG_I_Batch::~LOBPCG_I_Batch() {
 }
 
 void LOBPCG_I_Batch::compute() {
-	MatrixXd eval(batch, 1), evec(batch, batch), AX(A.rows(), batch), BX(A.rows(), batch), Xnew(A.rows(), 2 * batch);
 	clock_t t1, t2, T1 = 0, T2 = 0, T3 = 0, T4 = 0, T5 = 0, T6 = 0, T7 = 0, T8 = 0, T9 = 0, T10 = 0;
 	long long c1, c2, C1 = 0, C2 = 0, C3 = 0, C4 = 0, C5 = 0, C6 = 0, C7 = 0, C8 = 0, C9 = 0, C10 = 0;
+
+	VectorXd eval(batch);
+	MatrixXd evec(batch, batch), AX(A.rows(), batch), BX(A.rows(), batch), Xnew(A.rows(), 2 * batch);
 	//所有已计算出来的特征向量和待计算的都依次存在storage里，避免内存拷贝
 	Map<MatrixXd> V(storage, A.rows(), X.cols() + W.cols());
 	Map<MatrixXd> WP(storage + A.rows() * X.cols(), A.rows(), W.cols());
@@ -53,52 +55,42 @@ void LOBPCG_I_Batch::compute() {
 
 		if (AX.cols() != X.cols())
 			AX.resize(NoChange, X.cols());
+		if (BX.cols() != X.cols())
+			BX.resize(NoChange, X.cols());
+
 #pragma omp parallel for
 		for (int i = 0; i < X.cols(); ++i) {
 			AX.col(i).noalias() = A * X.col(i);
+			
+			//TODO 其实sparse_time_dense_product自带乘标量功能，是可以同时进行的
+			BX.col(i).noalias() = B * X.col(i);
+			memset(&W(0, i), 0, A.rows() * sizeof(double));
+			linearsolver._solveWithGuess(AX.col(i) - BX.col(i) * Lam(i, 0), W.col(i));
+			
+			//预存上一步的近似特征向量，BX废物利用作为临时空间
+			memcpy(&BX(0, i), &X(0, i), A.rows() * sizeof(double));
 		}
 		com_of_mul += A.nonZeros() * X.cols();
+		com_of_mul += B.nonZeros() * X.cols();
+		com_of_mul += A.rows() * X.cols();
+		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
+			cgstep * (A.nonZeros() + 7 * A.rows()));
 
 		t2 = clock();
 		c2 = com_of_mul;
 		T1 += t2 - t1;
 		C1 += c2 - c1;
 
-		if (BX.cols() != X.cols())
-			BX.resize(NoChange, X.cols());
-#pragma omp parallel for
-		for (int i = 0; i < X.cols(); ++i) {
-			//TODO 其实sparse_time_dense_product自带乘标量功能，是可以同时进行的
-			BX.col(i).noalias() = B * X.col(i);
-			BX.col(i) *= Lam(i, 0);
-			BX.col(i) -= AX.col(i);
-		}
-		com_of_mul += B.nonZeros() * X.cols();
-		com_of_mul += A.rows() * X.cols();
-
 		t1 = clock();
 		c1 = com_of_mul;
 		T2 += t1 - t2;
 		C2 += c1 - c2;
-
-		//求解 A*W = A*X - mu*B*X， X为上一步的近似特征向量
-		//W = linearsolver.solve(BX);
-		memset(&W(0, 0), 0, A.rows() * W.cols() * sizeof(double));
-
-#pragma omp parallel for
-		for (int i = 0; i < X.cols(); ++i)
-			linearsolver._solveWithGuess(BX.col(i), W.col(i));
-		com_of_mul += X.cols() * (A.nonZeros() + 4 * A.rows() +
-			cgstep * (A.nonZeros() + 7 * A.rows()));
 
 		t2 = clock();
 		c2 = com_of_mul;
 		T3 += t2 - t1;
 		C3 += c2 - c1;
 
-		//预存上一步的近似特征向量，BX废物利用
-		memcpy(&BX(0, 0), &X(0, 0), X.rows() * X.cols() * sizeof(double));
-		//BX = X;
 		t1 = clock();
 		c1 = com_of_mul;
 		T4 += t1 - t2;
@@ -111,14 +103,14 @@ void LOBPCG_I_Batch::compute() {
 
 		int dep = orthogonalization(WP, B);
 
+		//正交化后会有线性相关项，剔除
+		if (dep)
+			new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), WP.cols() - dep);
+
 		t2 = clock();
 		c2 = com_of_mul;
 		T5 += t2 - t1;
 		C5 += c2 - c1;
-
-		//正交化后会有线性相关项，剔除
-		if (dep)
-			new (&WP) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), WP.cols() - dep);
 
 		if (V.cols() != X.cols() + WP.cols()) 
 			new (&V) Map<MatrixXd>(storage, A.rows(), X.cols() + WP.cols());
@@ -162,12 +154,14 @@ void LOBPCG_I_Batch::compute() {
 			new (&X) Map<MatrixXd>(storage, A.rows(), wid);
 			new (&W) Map<MatrixXd>(storage + A.rows() * X.cols(), A.rows(), wid);
 		}
+
 		orthogonalization(X, eigenvectors, B);
 		dep = orthogonalization(X, B);
 		while (dep) {
 			X.rightCols(dep) = MatrixXd::Random(A.rows(), dep);
 			dep = orthogonalization(X, B);
 		}
+
 		t2 = clock();
 		c2 = com_of_mul;
 		T9 += t2 - t1;

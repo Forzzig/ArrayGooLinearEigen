@@ -22,8 +22,8 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-#define mLOBPCG_I
-#define mLOBPCG_II
+//#define mLOBPCG_I
+//#define mLOBPCG_II
 #define miRitz
 #define mBJD
 #define mRitz
@@ -105,7 +105,7 @@ int main() {
 		{30, 30, 20, 0}
 	};
 	vector<param> LOBIIparams = {
-		{10, 10, 20, 0},
+		{30, 10, 60, 0},
 		{10, 10, 30, 0},
 		{10, 10, 40, 0},
 		{20, 10, 20, 0},
