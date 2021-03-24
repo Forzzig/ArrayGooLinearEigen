@@ -35,7 +35,7 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	"bcsstk01",
+{	/*"bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
@@ -52,8 +52,7 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus",
-
+	"1138_bus",*/
 	"sym-pos/apache1",
 	"sym-pos/ct20stif",
 	"sym-pos/oilpan",
@@ -97,7 +96,7 @@ int main() {
 	};
 
 	vector<param> LOBIparams = {
-		{10, 10, 20, 0},
+		{30, 10, 50, 0},
 		{10, 10, 30, 0},
 		{10, 10, 40, 0},
 		{20, 10, 20, 0},
@@ -382,9 +381,7 @@ int main() {
 			Ritzoutput << nev << ", " << batch << ", " << r << ", " << ritz.nIter << ", " << ritz.com_of_mul << ", " << ritz.end_time - ritz.start_time << endl;
 			time_t now = time(&now);
 			if (totalTimeCheck(current, now))
-				break;	
-			cout << ritz.com_of_mul << endl;
-			system("pause");
+				break;
 		}
 		cout << "对" << matrixName << "使用Ritz法结束。" << endl;
 		Ritzresult.close();

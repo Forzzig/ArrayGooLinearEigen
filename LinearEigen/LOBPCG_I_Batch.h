@@ -9,7 +9,7 @@ public:
 	int cgstep, batch;
 	double* storage = NULL;
 	Map<MatrixXd> X, P, W;
-	MatrixXd H;
+	MatrixXd Lam;
 
 	ConjugateGradient<SparseMatrix<double, RowMajor>, Lower | Upper> linearsolver;
 

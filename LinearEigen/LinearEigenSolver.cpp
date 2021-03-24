@@ -13,10 +13,10 @@ LinearEigenSolver::LinearEigenSolver(SparseMatrix<double, RowMajor>& A, SparseMa
 	B(B), 
 	nev(nev), 
 	nIter(0),
-	eigenvectors(A.rows(), nev),
+	eigenvectors(A.rows(), 0),
 	com_of_mul(0), 
 	start_time(time(NULL)),
-	end_time(LLONG_MAX){
-
+	end_time(LLONG_MAX),
+	globaltmp(A.rows(), 0) {
 	coutput << scientific << setprecision(16);
 }

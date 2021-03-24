@@ -10,7 +10,7 @@ LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix
 	
 	batch(batch),
 	Lam(batch, 1),
-	cgstep(cgstep){
+	cgstep(cgstep) {
 
 	X = MatrixXd::Random(A.rows(), batch);
 	int dep = orthogonalization(X, B);

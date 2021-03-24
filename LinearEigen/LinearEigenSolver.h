@@ -24,17 +24,24 @@ public:
 	int nev;
 	vector<double> eigenvalues;
 	MatrixXd eigenvectors;
-	
+	MatrixXd globaltmp;
+
 	//GeneralizedSelfAdjointEigenSolver<MatrixXd> eigensolver;
 	SelfAdjointEigenSolver<MatrixXd> eigensolver;
 	
 	template <typename Derived, typename Derived_val, typename Derived_vec>
 	void projection_RR(Derived& V, SparseMatrix<double, RowMajor>& A, Derived_val& eigenvalues, Derived_vec& eigenvectors) {
-		MatrixXd tmpA(A.rows(), V.cols());
-		tmpA.noalias() = A * V;
-		tmpA.applyOnTheLeft(V.transpose());
+		MatrixXd VTAV(V.cols(), V.cols());
+		if (globaltmp.cols() != V.cols())
+			globaltmp.resize(NoChange, V.cols());
+#pragma omp parallel for
+		for (int i = 0; i < V.cols(); ++i) {
+			globaltmp.col(i).noalias() = A * V.col(i);
+			VTAV.col(i).noalias() = V.transpose() * globaltmp.col(i);
+		}
 		com_of_mul += A.nonZeros() * V.cols() + V.cols() * A.rows() * V.cols();
-		eigensolver.compute(tmpA);
+		
+		eigensolver.compute(VTAV);
 		eigenvalues = eigensolver.eigenvalues();
 		eigenvectors = eigensolver.eigenvectors();
 		com_of_mul += 24 * V.cols() * V.cols() * V.cols();
@@ -105,7 +112,6 @@ public:
 	int conv_select(Derived_val& eval, Derived_vec& evec, double shift, Out_val& valout, Out_vec& vecout) {
 		VectorXd tmp(A.rows()), tmpA(A.rows()), tmpB(A.rows());
 		int flag = LinearEigenSolver::CHECKNUM;
-		int prev = eigenvectors.cols();
 		int goon = 0;
 		for (int i = 0; i < evec.cols(); ++i) {
 			double err = 1;
@@ -121,6 +127,7 @@ public:
 					cout << "检查第" << i + 1 << "个特征值：" << eval(i, 0) - shift << "，相对误差：" << err << endl;
 					cout << "达到收敛条件！" << endl;
 					eigenvalues.push_back(eval(i, 0) - shift);
+					eigenvectors.conservativeResize(NoChange, eigenvalues.size());
 					memcpy(&eigenvectors(0, eigenvalues.size() - 1), &evec(0, i), A.rows() * sizeof(double));
 					//eigenvectors.col(eigenvalues.size() - 1) = evec.col(i);
 					
