@@ -26,7 +26,6 @@ public:
 	MatrixXd eigenvectors;
 	MatrixXd globaltmp;
 
-	//GeneralizedSelfAdjointEigenSolver<MatrixXd> eigensolver;
 	SelfAdjointEigenSolver<MatrixXd> eigensolver;
 	
 	template <typename Derived, typename Derived_val, typename Derived_vec>

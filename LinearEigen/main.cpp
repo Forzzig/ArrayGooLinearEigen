@@ -24,7 +24,7 @@ using namespace Eigen;
 //求解器列表
 //#define mLOBPCG_I
 //#define mLOBPCG_II
-#define miRitz
+//#define miRitz
 #define mBJD
 #define mRitz
 
@@ -54,7 +54,7 @@ string matrices[1000] =
 	"s3rmt3m3",
 	"1138_bus",*/
 	"sym-pos/apache1",
-	"sym-pos/ct20stif",
+	/*"sym-pos/ct20stif",
 	"sym-pos/oilpan",
 	"sym-pos/apache2",
 	"sym-pos/shipsec8",
@@ -78,7 +78,7 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"
+	"sym-pos/Flan_1565"*/
 };
 
 int main() {
@@ -312,8 +312,6 @@ int main() {
 			if (batch > nev)
 				continue;
 			if (A.rows() / (batch * restart) < 2)
-				continue;
-			if (A.rows() / gmres_size < 2)
 				continue;
 								
 			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)

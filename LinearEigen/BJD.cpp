@@ -7,10 +7,16 @@ BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, i
 	gmres_restart(gmres_restart), 
 	nRestart(0),
 	batch(batch),
-	V(A.rows(), batch* restart),
-	WA(A.rows(), batch* restart),
-	H(batch* restart, batch* restart)/*,
-	tmpAinv(A.rows()) */{
+	V(A.rows(), batch * restart),
+	/*W(A.rows(), batch * restart),*/
+	HA(batch * restart, batch * restart),
+	/*HB(batch * restart, batch * restart),*/
+	Atmp(A.rows(), batch),
+	Btmp(A.rows(), batch),
+	AV(A.rows(), batch * restart)/*,
+	BV(A.rows(), batch * restart),
+	tau(0),*/
+	/*tmpAinv(A.rows())*/{
 
 	Map<MatrixXd> V1(&V(0, 0), A.rows(), batch);
 	V1 = MatrixXd::Random(A.rows(), batch);
@@ -20,27 +26,26 @@ BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, i
 		dep = orthogonalization(V1, B);
 	}
 	
-	Map<MatrixXd> W1(&WA(0, 0), A.rows(), batch);
-	W1 = A * V1;
+	Map<MatrixXd> AV1(&AV(0, 0), A.rows(), batch);
+	/*Map<MatrixXd> BV1(&BV(0, 0), A.rows(), batch);
+	Map<MatrixXd> W1(&W(0, 0), A.rows(), batch);*/
+	AV1.noalias() = A * V1;
+	/*BV1.noalias() = B * V1;
+	W1 = AV1 - BV1 * tau;*/
 
-	/*WB.resize(A.rows(), batch * restart);
-	Map<MatrixXd> W2(&WB(0, 0), A.rows(), batch);
-	W2 = B * V1;
-	HA.resize(batch * restart, batch * restart);
-	HA.block(0, 0, batch, batch) = W1.transpose() * W1;
-	HB.resize(batch * restart, batch * restart);
-	HB.block(0, 0, batch, batch) = W2.transpose() * W2;
-	HAB.resize(batch * restart, batch * restart);
-	HAB.block(0, 0, batch, batch) = W1.transpose() * W2;*/
-	H.block(0, 0, batch, batch) = W1.transpose() * V1;
-    
-	//ILU需要
-    //ia = new int[A.rows() + 1];
-    //ja = new int[A.nonZeros()];
-    //a = new double[A.nonZeros()];
+	//HA.block(0, 0, V1.cols(), V1.cols()) = W1.transpose() * AV1;
+	HA.block(0, 0, V1.cols(), V1.cols()) = V1.transpose() * AV1;
+	/*HB.block(0, 0, V1.cols(), V1.cols()) = W1.transpose() * BV1;*/
 
-    //nnz = A.nonZeros();
-    //genCRS(A, ia, ja, a);
+	for (int i = 0; i < batch * restart; ++i) {
+		Y.push_back(MatrixXd(A.rows(), batch));
+		v.push_back(MatrixXd(batch, batch));
+	}
+
+#ifdef DIAG_PRECOND
+	for (int i = 0; i < batch; ++i)
+		Ainv.push_back(vector<double>(A.rows()));
+#endif // DIAG_PRECOND
 }
 
 BJD::~BJD() {
@@ -180,58 +185,65 @@ void BJD::CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<doub
 }
 
 void BJD::compute() {
+	clock_t t1, t2, T1 = 0, T2 = 0, T3 = 0, T4 = 0, T5 = 0, T6 = 0, T7 = 0, T8 = 0, T9 = 0, T10 = 0;
+	long long c1, c2, C1 = 0, C2 = 0, C3 = 0, C4 = 0, C5 = 0, C6 = 0, C7 = 0, C8 = 0, C9 = 0, C10 = 0;
+
 	VectorXd eval(restart * batch);
-	MatrixXd evec(restart * batch, restart * batch), ui(A.rows(), batch), ri(A.rows(), batch);
+	MatrixXd evec(restart * batch, restart * batch), ui(A.rows(), batch), ri(A.rows(), batch), Au(A.rows(), batch);
 	Map<MatrixXd> Vj(&V(0, 0), A.rows(), batch);
-	Map<MatrixXd> WAj(&WA(0, 0), A.rows(), batch);
-	/*Map<MatrixXd> WBj(&WB(0, 0), A.rows(), batch);*/
+	/*Map<MatrixXd> Wj(&W(0, 0), A.rows(), batch);*/
+	Map<MatrixXd> AVj(&AV(0, 0), A.rows(), batch);
+	/*Map<MatrixXd> BVj(&BV(0, 0), A.rows(), batch);*/
 
 	Map<MatrixXd> X(&V(0, Vj.cols()), A.rows(), ri.cols());
-	Map<MatrixXd> tmpWA(&WA(0, Vj.cols()), A.rows(), X.cols());
-	MatrixXd tmpeval(batch, 1), tmpevec(A.rows(), batch);
+	/*Map<MatrixXd> WX(&W(0, Vj.cols()), A.rows(), ri.cols());*/
+	Map<MatrixXd> AX(&AV(0, Vj.cols()), A.rows(), ri.cols());
+	/*Map<MatrixXd> BX(&BV(0, Vj.cols()), A.rows(), ri.cols());*/
 	int nd = batch;
-	/*long long t1, t2;
-	long long tRR = 0, tCnv = 0, tGMR = 0, tOrt = 0, tAX = 0, tH = 0;*/
 	while (true) {
 		++nRestart;
 		int prev = eigenvalues.size();
 		for (int i = 1; i <= restart; ++i) {
-			
+			t1 = clock();
+			c1 = com_of_mul;
+
 			++nIter;
 			system("cls");
 			cout << "第" << nRestart << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
-			//t1 = clock();
 
-			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), HAB.block(0, 0, Vj.cols(), Vj.cols()), 0, eval, evec);
-			RR(H.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
+			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
+			RR(HA.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
 			
-			//t2 = clock();
-			//tRR += t2 - t1;
+			t2 = clock();
+			c2 = com_of_mul;
+			T1 += t2 - t1;
+			C1 += c2 - c1;
 
-			//注意eval长度是偏长的
 			if (ui.cols() != nd)
 				ui.resize(NoChange, nd);
-			ui.noalias() = Vj * evec.leftCols(nd);
+#pragma omp parallel for
+			for (int j = 0; j < ui.cols(); ++j)
+				ui.col(j).noalias() = Vj * evec.col(j);
 			com_of_mul += A.rows() * Vj.cols() * nd;
 
-			if (ri.cols() != ui.cols())
-				ri.resize(NoChange, ui.cols());
-			ri.noalias() = B * ui;
-#pragma omp parallel for
-			for (int j = 0; j < ri.cols(); ++j) {
-				ri.col(j) *= eval(j, 0);
-			}
-			com_of_mul += ui.cols() * (B.nonZeros() + A.rows());
+			t1 = clock();
+			c1 = com_of_mul;
+			T2 += t1 - t2;
+			C2 += c1 - c2;
 
-			ri -= A * ui;
-			com_of_mul += A.nonZeros() * ui.cols();
+			t2 = clock();
+			c2 = com_of_mul;
+			T3 += t2 - t1;
+			C3 += c2 - c1;
 
-			int cnv = conv_select(eval, ui, 0, tmpeval, tmpevec);
+			t1 = clock();
+			c1 = com_of_mul;
+			T4 += t1 - t2;
+			C4 += c1 - c2;
+
+			int cnv = conv_select(eval, ui, 0, eval, ui);
 			cout << "BJD已收敛特征向量个数：" << cnv << endl;
-
-			//t1 = clock();
-			//tCnv += t1 - t2;
 
 			if (cnv > prev)
 				break;
@@ -243,54 +255,96 @@ void BJD::compute() {
 			if (timeCheck(start_time, now))
 				break;
 
+			t2 = clock();
+			c2 = com_of_mul;
+			T5 += t2 - t1;
+			C5 += c2 - c1;
+
+			if (ri.cols() != ui.cols())
+				ri.resize(NoChange, ui.cols());
 			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols());
-			X = MatrixXd::Zero(A.rows(), ri.cols());
+#pragma omp parallel for
+			for (int j = 0; j < ui.cols(); ++j) {
+				ri.col(j).noalias() = B * ui.col(j);
+				ri.col(j) *= eval(j, 0);
 
-			//L_GMRES(A, B, ri, ui, X, eval, gmres_size);
-            PMGMRES(ri, ui, X, eval);
+				Au.col(j).noalias() = A * ui.col(j);
+				ri.col(j) -= Au.col(j);
+				
+				memset(&X(0, j), 0, A.rows() * sizeof(double));
+				PMGMRES(A, B, ri.col(j), ui, X.col(j), eval(j, 0), j);
+			}
+			com_of_mul += ui.cols() * (B.nonZeros() + A.rows());
+			com_of_mul += A.nonZeros() * ui.cols();
 
-			//t2 = clock();
-			//tGMR += t2 - t1;
+			t1 = clock();
+			c1 = com_of_mul;
+			T6 += t1 - t2;
+			C6 += c1 - c2;
 
 			orthogonalization(X, eigenvectors, B);
 			orthogonalization(X, Vj, B);
-			
 			int dep = orthogonalization(X, B);
-
-			//t1 = clock();
-			//tOrt += t1 - t2;
-
 			new (&X) Map<MatrixXd>(&V(0, Vj.cols()), A.rows(), ri.cols() - dep);
-			new (&tmpWA) Map<MatrixXd>(&WA(0, Vj.cols()), A.rows(), X.cols());
-			tmpWA.noalias() = A * X;
-			com_of_mul += A.nonZeros() * X.cols();
+			/*new (&WX) Map<MatrixXd>(&W(0, Vj.cols()), A.rows(), X.cols());*/
+			new (&AX) Map<MatrixXd>(&AV(0, Vj.cols()), A.rows(), X.cols());
+			/*new (&BX) Map<MatrixXd>(&BV(0, Vj.cols()), A.rows(), X.cols());*/
 
-			//t2 = clock();
-			//tAX += t2 - t1;
+			t2 = clock();
+			c2 = com_of_mul;
+			T7 += t2 - t1;
+			C7 += c2 - c1;
+			
+#pragma omp parallel for
+			for (int j = 0; j < X.cols(); ++j) {
+				AX.col(j).noalias() = A * X.col(j);
+				/*BX.col(j).noalias() = B * X.col(j);
+				
+				WX.col(j).noalias() = AX.col(j) - BX.col(j) * tau;*/
+				//HA.block(0, Vj.cols() + j, Vj.cols(), 1).noalias() = Wj.transpose() * AX.col(j);
+				HA.block(0, Vj.cols() + j, Vj.cols(), 1).noalias() = V.transpose() * AX.col(j);
+				//HA.block(Vj.cols() + j, 0, 1, Vj.cols()) = HA.block(0, Vj.cols() + j, Vj.cols(), 1).transpose();
+				HA.block(Vj.cols() + j, 0, 1, Vj.cols()) = HA.block(0, Vj.cols() + j, Vj.cols(), 1).transpose();
+				/*HB.block(0, Vj.cols() + j, Vj.cols(), 1).noalias() = Wj.transpose() * BX.col(j);
+				HB.block(Vj.cols() + j, 0, 1, Vj.cols()) = HB.block(0, Vj.cols() + j, Vj.cols(), 1).transpose();*/
+			}
+			com_of_mul += X.cols() * (A.nonZeros() + Vj.cols() * X.rows());
+			
+			/*HA.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()).noalias() = WX.transpose() * AX;
+			HB.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()).noalias() = WX.transpose() * BX;*/
+			HA.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()).noalias() = X.transpose() * AX;
+			com_of_mul += X.cols() * A.rows() * X.cols();
+			
+			t1 = clock();
+			c1 = com_of_mul;
+			T8 += t1 - t2;
+			C8 += c1 - c2;
 
-			/*Map<MatrixXd> tmpWB(&WB(0, Vj.cols()), A.rows(), X.cols());
-			tmpWB = B * X;*/
-
-			/*HA.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WAj;
-			HA.block(0, Vj.cols(), Vj.cols(), X.cols()) = HA.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
-			HA.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * tmpWA;
-			HB.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWB.transpose() * WBj;
-			HB.block(0, Vj.cols(), Vj.cols(), X.cols()) = HB.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
-			HB.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWB.transpose() * tmpWB;
-			HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()) = tmpWA.transpose() * WBj;
-			HAB.block(0, Vj.cols(), Vj.cols(), X.cols()) = HAB.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
-			HAB.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()) = tmpWA.transpose() * tmpWB;*/
-			H.block(Vj.cols(), 0, X.cols(), Vj.cols()).noalias() = tmpWA.transpose() * Vj;
-			H.block(0, Vj.cols(), Vj.cols(), X.cols()) = H.block(Vj.cols(), 0, X.cols(), Vj.cols()).transpose();
-			H.block(Vj.cols(), Vj.cols(), X.cols(), X.cols()).noalias() = tmpWA.transpose() * X;
-			com_of_mul += X.cols() * A.rows() * Vj.cols() + X.cols() * A.rows() * X.cols();
-
-			//t1 = clock();
-			//tH += t1 - t2;
+			t2 = clock();
+			c2 = com_of_mul;
+			T9 += t2 - t1;
+			C9 += c2 - c1;
 
 			new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), Vj.cols() + X.cols());
-			new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), WAj.cols() + X.cols());
-			/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), WBj.cols() + X.cols());*/
+			/*new (&Wj) Map<MatrixXd>(&W(0, 0), A.rows(), Vj.cols());*/
+			new (&AVj) Map<MatrixXd>(&AV(0, 0), A.rows(), Vj.cols());
+			/*new (&BVj) Map<MatrixXd>(&BV(0, 0), A.rows(), Vj.cols());*/
+			
+			t1 = clock();
+			c1 = com_of_mul;
+			T10 += t1 - t2;
+			C10 += c1 - c2;
+			cout << T1 << " " << C1 << " " << C1 * 1.0 / T1 << endl;
+			cout << T2 << " " << C2 << " " << C2 * 1.0 / T2 << endl;
+			cout << T3 << " " << C3 << " " << C3 * 1.0 / T3 << endl;
+			cout << T4 << " " << C4 << " " << C4 * 1.0 / T4 << endl;
+			cout << T5 << " " << C5 << " " << C5 * 1.0 / T5 << endl;
+			cout << T6 << " " << C6 << " " << C6 * 1.0 / T6 << endl;
+			cout << T7 << " " << C7 << " " << C7 * 1.0 / T7 << endl;
+			cout << T8 << " " << C8 << " " << C8 * 1.0 / T8 << endl;
+			cout << T9 << " " << C9 << " " << C9 * 1.0 / T9 << endl;
+			cout << T10 << " " << C10 << " " << C10 * 1.0 / T10 << endl;
+			//system("pause");		
 		}
 		if (eigenvalues.size() >= nev)
 			break;
@@ -302,7 +356,7 @@ void BJD::compute() {
 		int left = nd - (eigenvalues.size() - prev);
 		nd = (batch < A.rows() - eigenvalues.size()) ? batch : A.rows() - eigenvalues.size();
 		new (&Vj) Map<MatrixXd>(&V(0, 0), A.rows(), nd);
-		Vj.leftCols(left) = tmpevec.leftCols(left);
+		Vj.leftCols(left) = ui.leftCols(left);
 		Vj.rightCols(nd - left) = MatrixXd::Random(A.rows(), nd - left);
 		orthogonalization(Vj, eigenvectors, B);
 		int dep = orthogonalization(Vj, B);
@@ -311,21 +365,23 @@ void BJD::compute() {
 			dep = orthogonalization(Vj, B);
 		}
 		
-		new (&WAj) Map<MatrixXd>(&WA(0, 0), A.rows(), Vj.cols());
-		/*new (&WBj) Map<MatrixXd>(&WB(0, 0), A.rows(), Vj.cols());*/
+		/*new (&Wj) Map<MatrixXd>(&W(0, 0), A.rows(), Vj.cols());*/
+		new (&AVj) Map<MatrixXd>(&AV(0, 0), A.rows(), Vj.cols());
+		/*new (&BVj) Map<MatrixXd>(&BV(0, 0), A.rows(), Vj.cols());*/
 
-		WAj.noalias() = A * Vj;
+#pragma omp parallel for
+		for (int j = 0; j < Vj.cols(); ++j) {
+			AVj.col(j).noalias() = A * Vj.col(j);
+			/*BVj.col(j).noalias() = B * Vj.col(j);
+
+			Wj.col(j) = AVj.col(j) - BVj.col(j) * tau;*/
+		}
 		com_of_mul += A.nonZeros() * Vj.cols();
 
-		/*WBj = B * Vj;
-		HA.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * WAj;
-		HB.block(0, 0, Vj.cols(), Vj.cols()) = WBj.transpose() * WBj;
-		HAB.block(0, 0, Vj.cols(), Vj.cols()) = WAj.transpose() * WBj;*/
-		H.block(0, 0, Vj.cols(), Vj.cols()).noalias() = WAj.transpose() * Vj;
+		/*HA.block(0, 0, Vj.cols(), Vj.cols()).noalias() = Wj.transpose() * AVj;
+		HB.block(0, 0, Vj.cols(), Vj.cols()).noalias() = Wj.transpose() * BVj;*/
+		HA.block(0, 0, Vj.cols(), Vj.cols()).noalias() = Vj.transpose() * AVj;
 		com_of_mul += Vj.cols() * A.rows() * Vj.cols();
 	}
-	/*cout << "RR   , Cnv   , GMR   , Ort   , AX   , H" << endl;
-	cout << tRR << ", " << tCnv << ", " << tGMR << ", " << tOrt << ", " << tAX << ", " << tH << endl;
-	system("pause");*/
 	finish();
 }
