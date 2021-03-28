@@ -13,6 +13,6 @@
 using namespace std;
 using namespace Eigen;
 
-int fstream_prepare(ofstream& txt, ofstream& csv, SparseMatrix<double, RowMajor>& A, string matrix_name, string method, string suff);
+int fstream_prepare(ofstream& txt, ofstream& csv, SparseMatrix<double, RowMajor, __int64>& A, string matrix_name, string method, string suff);
 
 #endif

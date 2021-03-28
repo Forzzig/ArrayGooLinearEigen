@@ -1,6 +1,6 @@
 #include<Ritz.h>
 
-Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r)
+Ritz::Ritz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -17,7 +17,8 @@ Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B,
 	X *= evec;
 
 	//A为RowMajor，利用对称性获取一个ColMajor稀疏矩阵
-	linearsolver.compute(A.transpose());
+	//linearsolver.compute(A.transpose());
+	linearsolver.compute(A);
 		
 #ifndef DIRECT
 	linearsolver.setMaxIterations(cgstep);
@@ -27,7 +28,7 @@ Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B,
 	long long* bandwidth = new long long[A.rows()];
 	memset(bandwidth, 0, sizeof(long long) * A.rows());
 	for (int k = 0; k < L.cols(); ++k)
-		for (SparseMatrix<double, RowMajor>::InnerIterator it(L, k); it; ++it)
+		for (SparseMatrix<double, RowMajor, __int64>::InnerIterator it(L, k); it; ++it)
 			++bandwidth[it.row()];
 	
 	for (int k = 0; k < A.rows(); ++k)
@@ -46,7 +47,7 @@ void Ritz::compute() {
 	double shift = 0;
 	int cnv = 0;
 	MatrixXd eval, evec, Xnew, tmp, rls;
-	SparseMatrix<double, RowMajor> tmpA;
+	SparseMatrix<double, RowMajor, __int64> tmpA;
 	V.resize(A.rows(), q * (r + 1));
 	P.resize(A.rows(), 0);
 	Map<MatrixXd> X0(&X(0, 0), A.rows(), q);

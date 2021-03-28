@@ -12,8 +12,8 @@ using namespace std;
 using namespace Eigen;
 class mtxio {
 public:
-	static SparseMatrix<double, RowMajor>& getSparseMatrix(string filename, string filepath);
-	static SparseMatrix<double, RowMajor>& getSparseMatrix(string filename);
+	static SparseMatrix<double, RowMajor, __int64>& getSparseMatrix(string filename, string filepath);
+	static SparseMatrix<double, RowMajor, __int64>& getSparseMatrix(string filename);
 };
 
 #endif

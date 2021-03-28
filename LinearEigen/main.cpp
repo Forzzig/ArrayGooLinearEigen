@@ -35,11 +35,11 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	/*"bcsstk01",
+{	"bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
-	"bcsstk08",
+	/*"bcsstk08",
 	"bcsstk09",
 	"bcsstk10",
 	"bcsstk12",
@@ -52,9 +52,9 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus",*/
+	"1138_bus",
 	"sym-pos/apache1",
-	/*"sym-pos/ct20stif",
+	"sym-pos/ct20stif",
 	"sym-pos/oilpan",
 	"sym-pos/apache2",
 	"sym-pos/shipsec8",
@@ -84,83 +84,7 @@ string matrices[1000] =
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 
 int main() {
-	double* A, * B, * C;
-	int m, n, k, i, j;
-	double alpha, beta;
-
-	printf("\n This example computes real matrix C=alpha*A*B+beta*C using \n"
-		" Intel(R) MKL function dgemm, where A, B, and  C are matrices and \n"
-		" alpha and beta are double precision scalars\n\n");
-
-	m = 2000, k = 200, n = 1000;
-	printf(" Initializing data for matrix multiplication C=A*B for matrix \n"
-		" A(%ix%i) and matrix B(%ix%i)\n\n", m, k, k, n);
-	alpha = 1.0; beta = 0.0;
-
-	printf(" Allocating memory for matrices aligned on 64-byte boundary for better \n"
-		" performance \n\n");
-	A = (double*)mkl_malloc(m * k * sizeof(double), 64);
-	B = (double*)mkl_malloc(k * n * sizeof(double), 64);
-	C = (double*)mkl_malloc(m * n * sizeof(double), 64);
-	if (A == NULL || B == NULL || C == NULL) {
-		printf("\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
-		mkl_free(A);
-		mkl_free(B);
-		mkl_free(C);
-		return 1;
-	}
-
-	printf(" Intializing matrix data \n\n");
-	for (i = 0; i < (m * k); i++) {
-		A[i] = (double)(i + 1);
-	}
-
-	for (i = 0; i < (k * n); i++) {
-		B[i] = (double)(-i - 1);
-	}
-
-	for (i = 0; i < (m * n); i++) {
-		C[i] = 0.0;
-	}
-
-	printf(" Computing matrix product using Intel(R) MKL dgemm function via CBLAS interface \n\n");
-	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-		m, n, k, alpha, A, k, B, n, beta, C, n);
-	printf("\n Computations completed.\n\n");
-
-	printf(" Top left corner of matrix A: \n");
-	for (i = 0; i < min(m, 6); i++) {
-		for (j = 0; j < min(k, 6); j++) {
-			printf("%12.0f", A[j + i * k]);
-		}
-		printf("\n");
-	}
-
-	printf("\n Top left corner of matrix B: \n");
-	for (i = 0; i < min(k, 6); i++) {
-		for (j = 0; j < min(n, 6); j++) {
-			printf("%12.0f", B[j + i * n]);
-		}
-		printf("\n");
-	}
-
-	printf("\n Top left corner of matrix C: \n");
-	for (i = 0; i < min(m, 6); i++) {
-		for (j = 0; j < min(n, 6); j++) {
-			printf("%12.5G", C[j + i * n]);
-		}
-		printf("\n");
-	}
-
-	printf("\n Deallocating memory \n\n");
-	mkl_free(A);
-	mkl_free(B);
-	mkl_free(C);
-
-	printf(" Example completed. \n\n");
-
-	system("PAUSE");
-
+	
 	Eigen::initParallel();
 
 	int n_matrices = 0;
@@ -227,14 +151,14 @@ int main() {
 		
 		//读A矩阵
 		string matrixName = matrices[n_matrices];
-		SparseMatrix<double, RowMajor> A;
+		SparseMatrix<double, RowMajor, __int64> A;
 		if (matrixName.length() > 0)
 			A = mtxio::getSparseMatrix("./matrix/" + matrixName + ".mtx");
 		else
 			A = mtxio::getSparseMatrix("./matrix/bcsstk01.mtx");
 
 		//TODO B先用单位阵
-		SparseMatrix<double, RowMajor> B(A.rows(), A.cols());
+		SparseMatrix<double, RowMajor, __int64> B(A.rows(), A.cols());
 		B.reserve(A.rows());
 		for (int i = 0; i < A.rows(); ++i)
 			B.insert(i, i) = 1;
@@ -259,7 +183,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 						
-			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep)
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep)
 			LP1result << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_I执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_I_Batch LP1(A, B, nev, cgstep, batch);
@@ -302,7 +226,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 
-			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep)
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep)
 			LP2result << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			cout << "LOBPCG_II执行参数：" << endl << "特征值：" << nev << "个，batch大小为" << batch << "，最大CG迭代步：" << cgstep << "次" << endl;
 			LOBPCG_II_Batch LP2(A, B, nev, cgstep, batch);
@@ -348,7 +272,7 @@ int main() {
 			if (A.rows() / cgstep < 2)
 				continue;
 			
-			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r) 
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r) 
 			IRresult << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			cout << "改进Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			IterRitz iritz(A, B, nev, cgstep, batch, r);
@@ -392,7 +316,7 @@ int main() {
 			if (A.rows() / (batch * restart) < 2)
 				continue;
 								
-			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart)
 			BJDresult << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			cout << "块J-D执行参数：" << endl << "特征值：" << nev << "个，重启步数：" << restart << "，batch大小：" << batch << endl << "，GMRES扩展空间大小：" << gmres_size << endl;
 			BJD bjd(A, B, nev, restart, batch, gmres_size, 1);
@@ -437,7 +361,7 @@ int main() {
 			if (A.rows() / (batch * r) < 2)
 				continue;
 	
-			//(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r) 
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r) 
 			Ritzresult << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);

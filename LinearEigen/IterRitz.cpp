@@ -1,6 +1,6 @@
 #include<IterRitz.h>
 
-IterRitz::IterRitz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r)
+IterRitz::IterRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),

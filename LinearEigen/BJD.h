@@ -23,11 +23,11 @@ public:
     GeneralizedSelfAdjointEigenSolver<MatrixXd> ges;
 
 	void CRSsort(int* ia, int* ja, double* a, int n);
-	void genCRS(SparseMatrix<double, RowMajor>& A, int* ia, int* ja, double* a);
+	void genCRS(SparseMatrix<double, RowMajor, __int64>& A, int* ia, int* ja, double* a);
 
-	void CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double, RowMajor>& B, double eff);
+	void CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double, RowMajor, __int64>& B, double eff);
 
-	BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart);
+	BJD(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart);
 	~BJD();
 
 	////用来实现求解V'(A-tauB)'AV = lam*V'(A-tauB)'BV
@@ -40,7 +40,7 @@ public:
 	//}
 	
 	template<typename Derived_U, typename Derived_Y, typename Derived_v>
-	void Minv_set(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor> &B, double lam, Derived_U& U, Derived_Y& Y, Derived_v& v, vector<double> &Ainv) {
+	void Minv_set(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64> &B, double lam, Derived_U& U, Derived_Y& Y, Derived_v& v, vector<double> &Ainv) {
 		/*[Ki, U;]^(-1)
 		   UT, 0;      * r = z
 		   K1 = Ki^(-1)        */
@@ -91,7 +91,7 @@ public:
 
 	//左乘A对应的增广矩阵, r和z不能相同
 	template<typename Derived_U, typename Derived_r, typename Derived_z, typename Derived_tmp>
-	void A_mul(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, double lam, Derived_U& U, Derived_r& r, Derived_z& z, Derived_tmp& Atmp, Derived_tmp& Btmp) {
+	void A_mul(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, double lam, Derived_U& U, Derived_r& r, Derived_z& z, Derived_tmp& Atmp, Derived_tmp& Btmp) {
         Atmp.noalias() = A * r.topRows(A.rows());
         Btmp.noalias() = B * r.topRows(A.rows());
         z.topRows(A.rows()).noalias() = U * r.bottomRows(U.cols());
@@ -106,7 +106,7 @@ public:
 	/*
     //左预处理GMRES，BJD特化版本
 	template<typename Derived_rhs, typename Derived_ss, typename Derived_sol, typename Derived_eval>
-	void L_GMRES(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
+	void L_GMRES(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, Derived_eval& lam, int m) {
 		//(求解：（I-UUT）（A-λB）z = b)
 		K1.resize(A.rows(), A.cols());
 		K1.reserve(A.rows());
@@ -216,7 +216,7 @@ public:
     */
 
     template<typename Derived_rhs, typename Derived_ss, typename Derived_sol>
-    void PMGMRES(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, double lam, int tmpindex) {
+    void PMGMRES(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, Derived_rhs& b, Derived_ss& U, Derived_sol& X, double lam, int tmpindex) {
 
         double av;
         double* c;

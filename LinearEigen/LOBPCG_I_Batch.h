@@ -11,9 +11,9 @@ public:
 	Map<MatrixXd> X, P, W;
 	MatrixXd Lam;
 
-	ConjugateGradient<SparseMatrix<double, RowMajor>, Lower | Upper> linearsolver;
+	ConjugateGradient<SparseMatrix<double, RowMajor, __int64>, Lower | Upper> linearsolver;
 
-	LOBPCG_I_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int batch);
+	LOBPCG_I_Batch(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int batch);
 	~LOBPCG_I_Batch();
 	void compute();
 };

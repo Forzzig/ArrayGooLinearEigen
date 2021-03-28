@@ -1,6 +1,6 @@
 #include<BJD.h>
 
-BJD::BJD(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart) 
+BJD::BJD(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int restart, int batch, int gmres_size, int gmres_restart) 
 	: LinearEigenSolver(A, B, nev),
 	restart(restart),
 	gmres_size(gmres_size),
@@ -55,14 +55,14 @@ BJD::~BJD() {
     //delete[] a;
 }
 
-void BJD::genCRS(SparseMatrix<double, RowMajor>& A, int* ia, int* ja, double* a) {
+void BJD::genCRS(SparseMatrix<double, RowMajor, __int64>& A, int* ia, int* ja, double* a) {
     
     int* tmpia = new int[A.nonZeros()];
     memset(ia, 0, sizeof(int) * (A.rows() + 1));
 
     int i = 0;
     for (int k = 0; k < A.cols(); ++k)
-        for (SparseMatrix<double, RowMajor>::InnerIterator it(A, k); it; ++it) {
+        for (SparseMatrix<double, RowMajor, __int64>::InnerIterator it(A, k); it; ++it) {
             tmpia[i] = it.row();
             ja[i] = it.col();
             a[i] = it.value();
@@ -104,14 +104,14 @@ void BJD::CRSsort(int* ia, int* ja, double* a, int n) {
 }
 
 //带自动扩容
-void BJD::CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double, RowMajor>& B, double eff) {
+void BJD::CRSsubtrac(int*& ia, int*& ja, double*& a, int& nnz, SparseMatrix<double, RowMajor, __int64>& B, double eff) {
     //记录增加的数
     int* row_add = new int[B.nonZeros()];
     int* col_add = new int[B.nonZeros()];
     double* value_add = new double[B.nonZeros()];
     int num = 0;
     for (int k = 0; k < B.cols(); ++k) {
-        for (SparseMatrix<double, RowMajor>::InnerIterator it(B, k); it; ++it) {
+        for (SparseMatrix<double, RowMajor, __int64>::InnerIterator it(B, k); it; ++it) {
             int l = ia[it.row()], r = ia[it.row() + 1] - 1, mid;
             while (l <= r) {
                 mid = (l + r) / 2;

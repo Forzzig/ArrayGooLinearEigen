@@ -1,7 +1,7 @@
 #include<LOBPCG_II_Batch.h>
 
 using namespace std;
-LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int batch)
+LOBPCG_II_Batch::LOBPCG_II_Batch(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int batch)
 	: LinearEigenSolver(A, B, nev),
 	storage(new double[A.rows() * nev * 3]),
 	X(storage, A.rows(), batch, OuterStride<>(3 * A.rows())),

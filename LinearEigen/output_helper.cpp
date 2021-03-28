@@ -1,6 +1,6 @@
 #include<output_helper.h>
 
-int fstream_prepare(ofstream& txt, ofstream& csv, SparseMatrix<double, RowMajor>& A, string matrix_name, string method, string suff)
+int fstream_prepare(ofstream& txt, ofstream& csv, SparseMatrix<double, RowMajor, __int64>& A, string matrix_name, string method, string suff)
 {
 	string folderPath = "./result/";
 	for (int i = 0; i < matrix_name.length(); ++i) {

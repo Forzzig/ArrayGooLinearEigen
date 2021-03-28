@@ -15,11 +15,11 @@ public:
 	int L_nnz;
 
 #ifdef DIRECT
-	PardisoLDLT<SparseMatrix<double>, Upper | Lower> linearsolver;
+	PardisoLDLT<SparseMatrix<double, RowMajor, __int64>, Upper | Lower> linearsolver;
 	//SimplicialLDLT<SparseMatrix<double>, Upper | Lower, COLAMDOrdering<int>> linearsolver;
 #endif // DIRECT
 
-	Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r);
+	Ritz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r);
 	void compute();
 };
 #endif

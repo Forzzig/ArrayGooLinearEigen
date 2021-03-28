@@ -19,8 +19,8 @@ public:
 	int nIter;
 	time_t start_time, end_time;
 	long long com_of_mul;
-	SparseMatrix<double, RowMajor>& A;
-	SparseMatrix<double, RowMajor>& B;
+	SparseMatrix<double, RowMajor, __int64>& A;
+	SparseMatrix<double, RowMajor, __int64>& B;
 	int nev;
 	vector<double> eigenvalues;
 	MatrixXd eigenvectors;
@@ -29,7 +29,7 @@ public:
 	SelfAdjointEigenSolver<MatrixXd> eigensolver;
 	
 	template <typename Derived, typename Derived_val, typename Derived_vec>
-	void projection_RR(Derived& V, SparseMatrix<double, RowMajor>& A, Derived_val& eigenvalues, Derived_vec& eigenvectors) {
+	void projection_RR(Derived& V, SparseMatrix<double, RowMajor, __int64>& A, Derived_val& eigenvalues, Derived_vec& eigenvectors) {
 		MatrixXd VTAV(V.cols(), V.cols());
 		if (globaltmp.cols() != V.cols())
 			globaltmp.resize(NoChange, V.cols());
@@ -55,7 +55,7 @@ public:
 	}
 	
 	template<typename Derived>
-	int normalize(Derived& v, SparseMatrix<double, RowMajor>& B) {
+	int normalize(Derived& v, SparseMatrix<double, RowMajor, __int64>& B) {
 		VectorXd tmp;
 		tmp.noalias() = B * v;
 		double r = sqrt(tmp.dot(v));
@@ -68,7 +68,7 @@ public:
 	}
 	
 	template<typename Derived>
-	int orthogonalization(Derived& V, SparseMatrix<double, RowMajor>& B) {
+	int orthogonalization(Derived& V, SparseMatrix<double, RowMajor, __int64>& B) {
 		vector<int> pos;
 		VectorXd tmpv;
 		for (int i = 0; i < V.cols(); ++i) {
@@ -94,7 +94,7 @@ public:
 	}
 	
 	template<typename Derived1, typename Derived2>
-	void orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double, RowMajor>& B) {
+	void orthogonalization(Derived1& V1, Derived2& V2, SparseMatrix<double, RowMajor, __int64>& B) {
 		VectorXd tmpv;
 		for (int i = 0; i < V2.cols(); ++i) {
 			tmpv.noalias() = B * V2.col(i);
@@ -149,7 +149,7 @@ public:
 		return eigenvalues.size();
 	}
 
-	LinearEigenSolver(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev);
+	LinearEigenSolver(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev);
 	virtual void compute() = 0;
 
 	void finish() {
