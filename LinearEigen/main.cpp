@@ -22,10 +22,10 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-//#define mLOBPCG_I
-//#define mLOBPCG_II
-//#define miRitz
-//#define mBJD
+#define mLOBPCG_I
+#define mLOBPCG_II
+#define miRitz
+#define mBJD
 #define mRitz
 
 //特殊后缀
@@ -35,11 +35,11 @@ time_t current;
 
 //各种矩阵
 string matrices[1000] =
-{	"bcsstk01",
+{	/*"bcsstk01",
 	"bcsstk02",
 	"bcsstk05",
 	"bcsstk07",
-	/*"bcsstk08",
+	"bcsstk08",
 	"bcsstk09",
 	"bcsstk10",
 	"bcsstk12",
@@ -52,7 +52,7 @@ string matrices[1000] =
 	"bwm2000",
 	"fidapm29",
 	"s3rmt3m3",
-	"1138_bus",
+	"1138_bus",*/
 	"sym-pos/apache1",
 	"sym-pos/ct20stif",
 	"sym-pos/oilpan",
@@ -78,14 +78,14 @@ string matrices[1000] =
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"*/
+	"sym-pos/Flan_1565"
 };
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 
 int main() {
 	
-	Eigen::initParallel();
+	//Eigen::initParallel();
 
 	int n_matrices = 0;
 	string method;
@@ -116,7 +116,7 @@ int main() {
 		{30, 30, 20, 0}
 	};
 	vector<param> IRparams = {
-		{10, 10, 20, 2},
+		{30, 10, 50, 3},
 		{10, 10, 20, 3},
 		{10, 10, 20, 4},
 		{10, 10, 30, 3},
@@ -138,11 +138,11 @@ int main() {
 		{30, 30, 20, 10}
 	};
 	vector<param> Ritzparams = {
-		/*{10, 10, 0, 3},
+		{10, 10, 0, 3},
 		{10, 10, 0, 4},
 		{10, 10, 0, 5},
 		{20, 10, 0, 3},
-		{30, 10, 0, 3},*/
+		{30, 10, 0, 3},
 		{30, 20, 0, 3},
 		{30, 30, 0, 3}
 	};
@@ -366,8 +366,6 @@ int main() {
 			cout << "Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << endl;
 			Ritz ritz(A, B, nev, 0, batch, r);
 			ritz.compute();
-			cout << ritz.com_of_mul << endl;
-			system("pause");
 
 			for (int i = 0; i < ritz.eigenvalues.size(); ++i) {
 				Ritzresult << "第" << i + 1 << "个特征值：" << ritz.eigenvalues[i] << "，";
