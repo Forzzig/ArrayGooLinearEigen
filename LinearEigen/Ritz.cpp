@@ -22,7 +22,7 @@ Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B,
 #ifndef DIRECT
 	linearsolver.setMaxIterations(cgstep);
 #else
-	SparseMatrix<double> L = linearsolver.matrixL();
+	/*SparseMatrix<double> L = linearsolver.matrixL();
 	L_nnz = L.nonZeros();
 	long long* bandwidth = new long long[A.rows()];
 	memset(bandwidth, 0, sizeof(long long) * A.rows());
@@ -32,9 +32,10 @@ Ritz::Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B,
 	
 	for (int k = 0; k < A.rows(); ++k)
 		com_of_mul += bandwidth[k] * (bandwidth[k] - 1) / 2;
+	delete[] bandwidth;*/
 
-	com_of_mul += 5 * L.nonZeros() + A.nonZeros();
-	delete[] bandwidth;
+	com_of_mul += 5 * A.nonZeros() + A.nonZeros();
+	
 #endif // !DIRECT
 
 	cout << "CG求解器准备完成..." << endl;

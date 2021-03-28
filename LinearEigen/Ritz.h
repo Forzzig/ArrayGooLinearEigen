@@ -2,6 +2,7 @@
 #define __RITZ_H__
 #include<LinearEigenSolver.h>
 #include<Eigen/OrderingMethods>
+#include <Eigen/PardisoSupport>
 
 #define DIRECT
 
@@ -14,7 +15,8 @@ public:
 	int L_nnz;
 
 #ifdef DIRECT
-	SimplicialLDLT<SparseMatrix<double>, Upper | Lower, COLAMDOrdering<int>> linearsolver;
+	PardisoLDLT<SparseMatrix<double>, Upper | Lower> linearsolver;
+	//SimplicialLDLT<SparseMatrix<double>, Upper | Lower, COLAMDOrdering<int>> linearsolver;
 #endif // DIRECT
 
 	Ritz(SparseMatrix<double, RowMajor>& A, SparseMatrix<double, RowMajor>& B, int nev, int cgstep, int q, int r);
