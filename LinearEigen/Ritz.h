@@ -12,7 +12,6 @@ public:
 	MatrixXd X;
 	MatrixXd LAM, V, P;
 	int q, r, cgstep;
-	int L_nnz;
 
 #ifdef DIRECT
 	PardisoLDLT<SparseMatrix<double, RowMajor, __int64>, Upper | Lower> linearsolver;

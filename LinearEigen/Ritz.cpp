@@ -76,7 +76,7 @@ void Ritz::compute() {
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 #else
 			X1 = linearsolver.solve(tmp);
-			com_of_mul += 2 * L_nnz + 5 * A.rows();
+			com_of_mul += 10 * A.nonZeros() + 5 * A.rows();
 #endif // !DIRECT
 
 			orthogonalization(X1, eigenvectors, B);
