@@ -58,8 +58,8 @@ string matrices[1000] =
 	//"sym-pos/shipsec8",
 	//"sym-pos/ship_003",
 
-	"sym-pos/apache1",	
-	"sym-pos/apache2",
+	/*"sym-pos/apache1",	
+	"sym-pos/apache2",*/
 	"sym-pos/shipsec5",
 	"sym-pos/crankseg_1",
 	"sym-pos/bmw7st_1",
@@ -113,8 +113,8 @@ int main() {
 		{100, 20, 30, 15}
 	};
 	vector<param> Ritzparams = {
-		{100, 20, 0, 3},
-		{100, 20, 0, 4}
+		{100, 20, 0, 4},
+		{100, 20, 0, 5}
 	};
 
 	while (matrices[n_matrices].length() != 0) {
