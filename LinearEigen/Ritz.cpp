@@ -35,7 +35,7 @@ Ritz::Ritz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowM
 		com_of_mul += bandwidth[k] * (bandwidth[k] - 1) / 2;
 	delete[] bandwidth;*/
 
-	com_of_mul += 5 * A.nonZeros() + A.nonZeros();
+	com_of_mul += 50 * A.nonZeros() + A.nonZeros();
 	
 #endif // !DIRECT
 
@@ -76,7 +76,7 @@ void Ritz::compute() {
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 #else
 			X1 = linearsolver.solve(tmp);
-			com_of_mul += 10 * A.nonZeros() + 5 * A.rows();
+			com_of_mul += 5 * A.nonZeros() + 5 * A.rows();
 #endif // !DIRECT
 
 			orthogonalization(X1, eigenvectors, B);

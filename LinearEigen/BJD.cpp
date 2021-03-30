@@ -208,9 +208,9 @@ void BJD::compute() {
 			c1 = com_of_mul;
 
 			++nIter;
-			system("cls");
 			cout << "第" << nRestart << "轮重启：" << endl;
 			cout << "迭代步：" << i << endl;
+			cout << "总迭代步：" << nIter << endl;
 
 			//generalized_RR(HA.block(0, 0, Vj.cols(), Vj.cols()), HB.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
 			RR(HA.block(0, 0, Vj.cols(), Vj.cols()), eval, evec);
@@ -330,6 +330,8 @@ void BJD::compute() {
 			new (&AVj) Map<MatrixXd>(&AV(0, 0), A.rows(), Vj.cols());
 			/*new (&BVj) Map<MatrixXd>(&BV(0, 0), A.rows(), Vj.cols());*/
 			
+			system("cls");
+
 			t1 = clock();
 			c1 = com_of_mul;
 			T10 += t1 - t2;
