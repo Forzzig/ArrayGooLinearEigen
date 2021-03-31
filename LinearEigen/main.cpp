@@ -22,11 +22,11 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-#define miRitz
-#define mLOBPCG_I
-#define mLOBPCG_II
+//#define miRitz
+//#define mLOBPCG_I
+//#define mLOBPCG_II
 #define mBJD
-#define mRitz
+//#define mRitz
 
 //特殊后缀
 string suff = "";
@@ -57,29 +57,30 @@ string matrices[1000] =
 	//"sym-pos/oilpan",
 	//"sym-pos/shipsec8",
 	//"sym-pos/ship_003",
+	//"sym-pos/shipsec5",
+	//"sym-pos/bmw7st_1",
+	//"sym-pos/m_t1",
+	//"sym-pos/pwtk",
+	//"sym-pos/msdoor",
+	//"sym-pos/StocF-1465",
+	
+	//"sym-pos/Fault_639",
+	//"sym-pos/Emilia_923",
 
-	/*"sym-pos/apache1",	
-	"sym-pos/apache2",*/
-	"sym-pos/shipsec5",
+
+	"sym-pos/apache1",	
+	/*"sym-pos/apache2",
 	"sym-pos/crankseg_1",
-	"sym-pos/bmw7st_1",
-	"sym-pos/m_t1",
-	"sym-pos/x104",
 	"sym-pos/hood",
 	"sym-pos/crankseg_2",
-	"sym-pos/pwtk",
 	"sym-pos/bmwcra_1",
-	"sym-pos/msdoor",
-	"sym-pos/StocF-1465",
-	"sym-pos/Fault_639",
-	"sym-pos/Emilia_923",
 	"sym-pos/inline_1",
 	"sym-pos/ldoor",
 	"sym-pos/Hook_1498",
 	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"
+	"sym-pos/Flan_1565"*/
 };
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
@@ -108,13 +109,10 @@ int main() {
 		{100, 20, 60, 3}
 	};
 	vector<param> BJDparams = {
-		{100, 20, 40, 15},
-		{100, 20, 40, 20},
-		{100, 20, 30, 15}
+		{100, 20, 50, 15}
 	};
 	vector<param> Ritzparams = {
-		{100, 20, 0, 4},
-		{100, 20, 0, 5}
+		{100, 20, 0, 4}
 	};
 
 	while (matrices[n_matrices].length() != 0) {

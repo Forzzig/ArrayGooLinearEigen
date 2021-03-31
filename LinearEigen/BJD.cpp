@@ -37,7 +37,7 @@ BJD::BJD(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMaj
 	HA.block(0, 0, V1.cols(), V1.cols()) = V1.transpose() * AV1;
 	/*HB.block(0, 0, V1.cols(), V1.cols()) = W1.transpose() * BV1;*/
 
-	for (int i = 0; i < batch * restart; ++i) {
+	for (int i = 0; i < batch; ++i) {
 		Y.push_back(MatrixXd(A.rows(), batch));
 		v.push_back(MatrixXd(batch, batch));
 	}
@@ -329,7 +329,7 @@ void BJD::compute() {
 			/*new (&Wj) Map<MatrixXd>(&W(0, 0), A.rows(), Vj.cols());*/
 			new (&AVj) Map<MatrixXd>(&AV(0, 0), A.rows(), Vj.cols());
 			/*new (&BVj) Map<MatrixXd>(&BV(0, 0), A.rows(), Vj.cols());*/
-			
+
 			system("cls");
 
 			t1 = clock();

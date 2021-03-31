@@ -20,7 +20,7 @@ public:
     int batch;
     //double tau;
 
-    GeneralizedSelfAdjointEigenSolver<MatrixXd> ges;
+    //GeneralizedSelfAdjointEigenSolver<MatrixXd> ges;
 
 	void CRSsort(int* ia, int* ja, double* a, int n);
 	void genCRS(SparseMatrix<double, RowMajor, __int64>& A, int* ia, int* ja, double* a);
