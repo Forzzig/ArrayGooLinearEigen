@@ -22,11 +22,11 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-//#define miRitz
-//#define mLOBPCG_I
-//#define mLOBPCG_II
+#define miRitz
+#define mLOBPCG_I
+#define mLOBPCG_II
 #define mBJD
-//#define mRitz
+#define mRitz
 
 //特殊后缀
 string suff = "";
@@ -68,8 +68,11 @@ string matrices[1000] =
 	//"sym-pos/Emilia_923",
 
 
+	//"sym-pos/Geo_1438",
+
+
 	"sym-pos/apache1",	
-	/*"sym-pos/apache2",
+	"sym-pos/apache2",
 	"sym-pos/crankseg_1",
 	"sym-pos/hood",
 	"sym-pos/crankseg_2",
@@ -77,10 +80,11 @@ string matrices[1000] =
 	"sym-pos/inline_1",
 	"sym-pos/ldoor",
 	"sym-pos/Hook_1498",
-	"sym-pos/Geo_1438",
 	"sym-pos/Serena",
 	"sym-pos/audikw_1",
-	"sym-pos/Flan_1565"*/
+	"sym-pos/Flan_1565",
+	"sym-pos/Bump_2911",
+	"sym-pos/Queen_4147"
 };
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))

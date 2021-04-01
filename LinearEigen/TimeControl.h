@@ -2,8 +2,8 @@
 #define __TIMECONTROL_H__
 
 //³¬Ê±ÏÞÖÆ
-#define time_tol 3600
-#define total_time_tol 3600
+#define time_tol 18000
+#define total_time_tol 18000
 
 #include<chrono>
 #include<ctime>
