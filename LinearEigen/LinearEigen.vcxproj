@@ -165,6 +165,7 @@
     <ClCompile Include="mgmres.cpp" />
     <ClCompile Include="mtxio.cpp" />
     <ClCompile Include="output_helper.cpp" />
+    <ClCompile Include="refineRitz.cpp" />
     <ClCompile Include="Ritz.cpp" />
     <ClCompile Include="TimeControl.cpp" />
   </ItemGroup>
@@ -180,6 +181,7 @@
     <ClInclude Include="mgmres.hpp" />
     <ClInclude Include="mtxio.h" />
     <ClInclude Include="output_helper.h" />
+    <ClInclude Include="refineRitz.h" />
     <ClInclude Include="Ritz.h" />
     <ClInclude Include="TimeControl.h" />
   </ItemGroup>

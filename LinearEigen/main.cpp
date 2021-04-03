@@ -23,13 +23,13 @@ using namespace Eigen;
 
 //求解器列表
 #define miRitz
-#define mLOBPCG_I
-#define mLOBPCG_II
-#define mBJD
-#define mRitz
+//#define mLOBPCG_I
+//#define mLOBPCG_II
+//#define mBJD
+//#define mRitz
 
 //特殊后缀
-string suff = "";
+string suff = "-refined";
 
 time_t current;
 
@@ -71,11 +71,11 @@ string matrices[1000] =
 	//"sym-pos/Geo_1438",
 
 
-	"sym-pos/apache1",	
+	/*"sym-pos/apache1",	
 	"sym-pos/apache2",
-	"sym-pos/crankseg_1",
+	"sym-pos/crankseg_1",*/
 	"sym-pos/hood",
-	"sym-pos/crankseg_2",
+	/*"sym-pos/crankseg_2",
 	"sym-pos/bmwcra_1",
 	"sym-pos/inline_1",
 	"sym-pos/ldoor",
@@ -84,7 +84,7 @@ string matrices[1000] =
 	"sym-pos/audikw_1",
 	"sym-pos/Flan_1565",
 	"sym-pos/Bump_2911",
-	"sym-pos/Queen_4147"
+	"sym-pos/Queen_4147"*/
 };
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
@@ -110,7 +110,7 @@ int main() {
 		{100, 40, 60, 0}
 	};
 	vector<param> IRparams = {
-		{100, 20, 60, 3}
+		{20, 10, 60, 3}
 	};
 	vector<param> BJDparams = {
 		{100, 20, 50, 15}

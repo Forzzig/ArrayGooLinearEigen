@@ -56,7 +56,7 @@ public:
 	
 	template<typename Derived>
 	int normalize(Derived& v, SparseMatrix<double, RowMajor, __int64>& B) {
-		VectorXd tmp;
+		VectorXd tmp(B.rows());
 		tmp.noalias() = B * v;
 		double r = sqrt(tmp.dot(v));
 		com_of_mul += B.nonZeros() + B.rows();
@@ -70,7 +70,7 @@ public:
 	template<typename Derived>
 	int orthogonalization(Derived& V, SparseMatrix<double, RowMajor, __int64>& B) {
 		vector<int> pos;
-		VectorXd tmpv(A.rows());
+		VectorXd tmpv(B.rows());
 		for (int i = 0; i < V.cols(); ++i) {
 			//TODO 若范数很小，认为出现线性相关，抛弃
 			int flag = normalize(V.col(i), B);
@@ -81,7 +81,7 @@ public:
 #pragma omp parallel for
 				for (int j = i + 1; j < V.cols(); ++j) {
 					double tmp = V.col(j).dot(tmpv);
-					V.col(j) -= tmp * V.col(i);
+					V.col(j).noalias() -= tmp * V.col(i);
 				}
 				com_of_mul += 2 * V.rows() * (V.cols() - 1 - i);
 				pos.push_back(i);
@@ -106,7 +106,7 @@ public:
 		for (int j = 0; j < V1.cols(); ++j) {
 			for (int i = 0; i < V2.cols(); ++i) {
 				double tmp = V1.col(j).dot(BV2.col(i));
-				V1.col(j) -= tmp * V2.col(i);
+				V1.col(j).noalias() -= tmp * V2.col(i);
 			}
 			com_of_mul += 2 * A.rows() * V2.cols();
 
@@ -115,7 +115,7 @@ public:
 			if (V1.col(j).dot(tmpV.col(j)) < ORTH_TOL) {
 				for (int i = 0; i < V2.cols(); ++i) {
 					double tmp = V1.col(j).dot(BV2.col(i));
-					V1.col(j) -= tmp * V2.col(i);
+					V1.col(j).noalias() -= tmp * V2.col(i);
 				}
 				com_of_mul += 2 * A.rows() * V2.cols() + B.nonZeros();
 			}
