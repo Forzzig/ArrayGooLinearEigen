@@ -110,7 +110,7 @@ void IterRitz::compute() {
 		if (Xnew.cols() != nd)
 			Xnew.resize(NoChange, nd);
 		Xnew.noalias() = V0 * evec.leftCols(nd);
-		com_of_mul += A.rows() * V.cols() * nd;
+		com_of_mul += A.rows() * V0.cols() * nd;
 
 		if (P.cols() != X.cols())
 			P.resize(NoChange, X.cols());

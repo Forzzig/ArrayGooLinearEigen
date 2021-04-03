@@ -7,6 +7,7 @@
 #include<LOBPCG_I_Batch.h>
 #include<LOBPCG_II_Batch.h>
 #include<IterRitz.h>
+#include<refineRitz.h>
 #include<Ritz.h>
 #include<BJD.h>
 #include<ctime>
@@ -22,14 +23,15 @@ using namespace std;
 using namespace Eigen;
 
 //求解器列表
-#define miRitz
+//#define miRitz
+#define rfRitz
 //#define mLOBPCG_I
 //#define mLOBPCG_II
 //#define mBJD
 //#define mRitz
 
 //特殊后缀
-string suff = "-refined";
+string suff = "";
 
 time_t current;
 
@@ -109,6 +111,8 @@ int main() {
 	vector<param> LOBIIparams = {
 		{100, 40, 60, 0}
 	};
+
+	//IRparams同时也用于refineRitz
 	vector<param> IRparams = {
 		{20, 10, 60, 3}
 	};
@@ -181,6 +185,52 @@ int main() {
 		cout << "对" << matrixName << "使用改进Ritz法结束。" << endl;
 		IRresult.close();
 		IRoutput.close();
+#endif
+
+#ifdef rfRitz
+		ofstream rfoutput;
+		ofstream rfresult;
+		method = "refineRitz";
+		fstream_prepare(rfresult, rfoutput, A, matrixName, method, suff);
+		rfoutput << "nev, batch, r, cgstep, iter, multi, time" << endl;
+		for (int i = 0; i < IRparams.size(); ++i) {
+			int nev = IRparams[i].nev;
+			int batch = IRparams[i].batch;
+			int cgstep = IRparams[i].cg;
+			int r = IRparams[i].res;
+
+			if (nev < batch)
+				continue;
+			if (A.rows() / nev < 3)
+				continue;
+			if (A.rows() / (batch * r) < 2)
+				continue;
+			if (A.rows() / cgstep < 2)
+				continue;
+
+			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r) 
+			rfresult << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			cout << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
+			refineRitz rfritz(A, B, nev, cgstep, batch, r);
+			rfritz.compute();
+
+			for (int i = 0; i < rfritz.eigenvalues.size(); ++i) {
+				rfresult << "第" << i + 1 << "个特征值：" << rfritz.eigenvalues[i] << "，";
+				//cout << "第" << i + 1 << "个特征向量：" << rfritz.eigenvectors.col(i).transpose() << endl;
+				rfresult << "相对误差：" << (A * rfritz.eigenvectors.col(i) - rfritz.eigenvalues[i] * B * rfritz.eigenvectors.col(i)).norm() / (A * rfritz.eigenvectors.col(i)).norm() << endl;
+			}
+			rfresult << "精化Ritz法迭代次数" << rfritz.nIter << endl;
+			rfresult << "精化Ritz法乘法次数" << rfritz.com_of_mul << endl;
+			rfresult << "精化Ritz法计算时间：" << rfritz.end_time - rfritz.start_time << "秒" << endl << endl;
+
+			rfoutput << nev << ", " << batch << ", " << r << ", " << cgstep << ", " << rfritz.nIter << ", " << rfritz.com_of_mul << ", " << rfritz.end_time - rfritz.start_time << endl;
+			time_t now = time(&now);
+			if (totalTimeCheck(current, now))
+				break;
+		}
+		cout << "对" << matrixName << "使用精化Ritz法结束。" << endl;
+		rfresult.close();
+		rfoutput.close();
 #endif
 
 #ifdef mLOBPCG_I

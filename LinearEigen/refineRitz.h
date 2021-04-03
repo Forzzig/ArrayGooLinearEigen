@@ -1,9 +1,13 @@
-#ifndef __ITERRITZ_H__
-#define __ITERRITZ_H__
+#ifndef __REFINERITZ_H__
+#define __REFINERITZ_H__
 #include<LinearEigenSolver.h>
 
+#define use_P
+#define use_refine
+//#define use_X
+
 using namespace Eigen;
-class IterRitz : public LinearEigenSolver {
+class refineRitz : public LinearEigenSolver {
 public:
 	MatrixXd X, V, Lam, P;
 	int q, r, cgstep;
@@ -31,7 +35,7 @@ public:
 		com_of_mul += A.rows() * V.cols();
 	}
 
-	IterRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r);
+	refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r);
 	void compute();
 };
 #endif

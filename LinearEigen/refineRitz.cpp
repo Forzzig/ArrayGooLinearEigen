@@ -1,6 +1,6 @@
-#include<IterRitz.h>
+#include<refineRitz.h>
 
-IterRitz::IterRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r)
+refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -29,7 +29,7 @@ IterRitz::IterRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<doub
 	cout << "初始化完成" << endl;
 }
 
-void IterRitz::compute() {
+void refineRitz::compute() {
 	double shift = 0;
 	VectorXd eval(q * (r + 2));
 	MatrixXd evec(q * (r + 2), q * (r + 2)), Xnew(A.rows(), 2 * q), BX(A.rows(), q * (r + 2)), realX(A.rows(), q), AX(A.rows(), q * (r + 2));
@@ -66,8 +66,8 @@ void IterRitz::compute() {
 				if (i == 0)
 					memcpy(&X1(0, j), &realX(0, j), A.rows() * sizeof(double));
 			}
-			com_of_mul += A.rows() * BX.cols();
-			com_of_mul += BX.cols() * (A.nonZeros() + 4 * A.rows() +
+			com_of_mul += A.rows() * realX.cols();
+			com_of_mul += realX.cols() * (A.nonZeros() + 4 * A.rows() +
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 
 			orthogonalization(X1, eigenvectors, B);
@@ -85,7 +85,7 @@ void IterRitz::compute() {
 				}
 				com_of_mul += B.nonZeros() * realX.cols();
 				com_of_mul += realX.cols() * A.nonZeros();
-				com_of_mul += 2 * A.rows() * BX.cols();
+				com_of_mul += 2 * A.rows() * realX.cols();
 			}
 		}
 		if (P.cols() != X1.cols())
@@ -103,11 +103,10 @@ void IterRitz::compute() {
 		for (int j = 0; j < V0.cols(); ++j) {
 			AX.col(j).noalias() = A * V0.col(j);
 			BX.col(j).noalias() = B * V0.col(j);
+			H.block(0, j, V0.cols(), 1).noalias() = V0.transpose() * AX.col(j);
 		}
 		com_of_mul += A.nonZeros() * V0.cols();
 		com_of_mul += B.nonZeros() * V0.cols();
-
-		H.topLeftCorner(V0.cols(), V0.cols()).noalias() = V0.transpose() * AX.leftCols(V0.cols());
 		com_of_mul += V0.cols() * A.rows() * V0.cols();
 
 		RR(H.topLeftCorner(V0.cols(), V0.cols()), eval, evec);
@@ -116,20 +115,32 @@ void IterRitz::compute() {
 		if (Xnew.cols() != nd)
 			Xnew.resize(NoChange, nd);
 		Xnew.noalias() = V0 * evec.leftCols(nd);
-		com_of_mul += A.rows() * V.cols() * nd;
+		com_of_mul += A.rows() * V0.cols() * nd;
 
-		//if (P.cols() != 2 * X.cols())
-		//	P.resize(NoChange, 2 * X.cols());
-		//memcpy(&P(0, 0), &X(0, 0), A.rows() * X.cols() * sizeof(double));
-		//int Xc = X.cols();
-		if (P.cols() != X.cols())
-			P.resize(NoChange, X.cols());
+		int Psize = 0;
+#ifdef use_P
+		++Psize;
+#endif // use_P
+#ifdef use_refine
+		++Psize;
+#endif // use_refine
+#ifdef use_X
+		++Psize;
+#endif // use_X
+
+
+		if (P.cols() != Psize * X.cols())
+			P.resize(NoChange, Psize * X.cols());
+		int Xc = 0;
+#ifdef use_P
 		memcpy(&P(0, 0), &X(0, 0), A.rows() * X.cols() * sizeof(double));
-
+		Xc += X.cols();
+#endif // use_P
+		
 		system("cls");
 		int prev = eigenvalues.size();
 		int cnv = conv_select(eval, Xnew, shift, Lam, X);
-		cout << "IterRitz已收敛特征向量个数：" << cnv << endl;
+		cout << "refineRitz已收敛特征向量个数：" << cnv << endl;
 
 		if (cnv >= nev) {
 			break;
@@ -142,41 +153,43 @@ void IterRitz::compute() {
 		if (nd - (cnv - prev) < X.cols())
 			X.conservativeResize(NoChange, nd - (cnv - prev));
 
-		/*if (P.cols() != Xc + X.cols())
-			P.conservativeResize(NoChange, Xc + X.cols());*/
-			//		if (P.cols() != X.cols())
-			//			P.resize(NoChange, X.cols());
-			//
-			//		if (CA.cols() != V0.cols()) {
-			//			CA.resize(V0.cols(), V0.cols());
-			//			CB.resize(V0.cols(), V0.cols());
-			//			CAB.resize(V0.cols(), V0.cols());
-			//			CBA.resize(V0.cols(), V0.cols());
-			//		}
-			//#pragma omp parallel for
-			//		for (int j = 0; j < V0.cols(); ++j) {
-			//			CA.col(j).noalias() = AX.leftCols(V0.cols()).transpose() * AX.col(j);
-			//			CB.col(j).noalias() = BX.leftCols(V0.cols()).transpose() * BX.col(j);
-			//			CAB.col(j).noalias() = AX.leftCols(V0.cols()).transpose() * BX.col(j);
-			//			CBA.col(j).noalias() = BX.leftCols(V0.cols()).transpose() * AX.col(j);
-			//		}
-			//		com_of_mul += 4 * V0.cols() * V0.rows() * V0.cols();
-			//
-			//		vector<int> pos;
-			//		vector<int> num;
-			//		for (int j = 0; j < X.cols(); ++j) {
-			//			int k = j + 1;
-			//			while ((k < X.cols()) && ((Lam(k, 0) - Lam(j, 0)) / Lam(j, 0) < ORTH_TOL))
-			//				++k;
-			//			pos.push_back(j);
-			//			num.push_back(k - j);
-			//			j = k - 1;
-			//		}
-			//#pragma omp parallel for
-			//		for (int i = 0; i < pos.size(); ++i) {
-			//			//refine(Lam(pos[i], 0), V0, P.middleCols(Xc + pos[i], num[i]));
-			//			refine(Lam(pos[i], 0), V0, P.middleCols(pos[i], num[i]));
-			//		}
+#ifdef use_refine
+		if (CA.cols() != V0.cols()) {
+			CA.resize(V0.cols(), V0.cols());
+			CB.resize(V0.cols(), V0.cols());
+			CAB.resize(V0.cols(), V0.cols());
+			CBA.resize(V0.cols(), V0.cols());
+		}
+#pragma omp parallel for
+		for (int j = 0; j < V0.cols(); ++j) {
+			CA.col(j).noalias() = AX.leftCols(V0.cols()).transpose() * AX.col(j);
+			CAB.col(j).noalias() = AX.leftCols(V0.cols()).transpose() * BX.col(j);
+			CB.col(j).noalias() = BX.leftCols(V0.cols()).transpose() * BX.col(j);
+			CBA.col(j).noalias() = BX.leftCols(V0.cols()).transpose() * AX.col(j);
+		}
+		com_of_mul += 4 * V0.cols() * V0.rows() * V0.cols();
+	
+		vector<int> pos;
+		vector<int> num;
+		for (int j = 0; j < X.cols(); ++j) {
+			int k = j + 1;
+			while ((k < X.cols()) && ((Lam(k, 0) - Lam(j, 0)) / Lam(j, 0) < ORTH_TOL))
+				++k;
+			pos.push_back(j);
+			num.push_back(k - j);
+			j = k - 1;
+		}
+#pragma omp parallel for
+		for (int i = 0; i < pos.size(); ++i) {
+			refine(Lam(pos[i], 0), V0, P.middleCols(Xc + pos[i], num[i]));
+		}
+		Xc += X.cols();
+#endif // use_refine
+
+#ifdef use_X
+		memcpy(&P(0, Xc), &X(0, 0), A.rows() * X.cols() * sizeof(double));
+		Xc += X.cols();
+#endif // use_X
 	}
 	finish();
 }
