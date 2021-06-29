@@ -1,6 +1,6 @@
 #include<refineRitz.h>
 
-refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r)
+refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -12,7 +12,8 @@ refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<
 	CA(q* (r + 2), q* (r + 2)),
 	CB(q* (r + 2), q* (r + 2)),
 	CAB(q* (r + 2), q* (r + 2)),
-	CBA(q* (r + 2), q* (r + 2)) {
+	CBA(q* (r + 2), q* (r + 2)),
+	ratio(ratio) {
 
 	int dep = orthogonalization(X, B);
 	while (dep) {
@@ -77,8 +78,13 @@ void refineRitz::compute() {
 			new (&X1) Map<MatrixXd>(&V0(A.rows() - 1, V0.cols() - 1) + 1, A.rows(), realX.cols());
 
 			if (i < r - 1) {
+				
+				int nextX = realX.cols(); //ceil(realX.cols() * ratio);
+				/*realX.conservativeResize(NoChange, nextX);
+				new (&X1) Map<MatrixXd>(&X1(0, 0), A.rows(), realX.cols());*/
+
 #pragma omp parallel for
-				for (int j = 0; j < realX.cols(); ++j) {
+				for (int j = 0; j < nextX; ++j) {
 					BX.col(j).noalias() = B * realX.col(j);
 					AX.col(j).noalias() = A * realX.col(j);
 					Lam(j, 0) = realX.col(j).dot(AX.col(j)) / realX.col(j).dot(BX.col(j));
@@ -88,6 +94,7 @@ void refineRitz::compute() {
 				com_of_mul += 2 * A.rows() * realX.cols();
 			}
 		}
+
 		if (P.cols() != X1.cols())
 			new (&X1) Map<MatrixXd>(&X1(0, 0), A.rows(), P.cols());
 		if (P.cols())
@@ -127,13 +134,15 @@ void refineRitz::compute() {
 #ifdef use_X
 		++Psize;
 #endif // use_X
-
+#ifdef use_Xr
+		++Psize;
+#endif //use_Xr
 
 		if (P.cols() != Psize * X.cols())
 			P.resize(NoChange, Psize * X.cols());
 		int Xc = 0;
 #ifdef use_P
-		memcpy(&P(0, 0), &X(0, 0), A.rows() * X.cols() * sizeof(double));
+		memcpy(&P(0, Xc), &X(0, 0), A.rows() * X.cols() * sizeof(double));
 		Xc += X.cols();
 #endif // use_P
 		
@@ -141,6 +150,9 @@ void refineRitz::compute() {
 		int prev = eigenvalues.size();
 		int cnv = conv_select(eval, Xnew, shift, Lam, X);
 		cout << "refineRitz已收敛特征向量个数：" << cnv << endl;
+
+		for (int i = 0; i < X.cols(); ++i)
+			coutput << "AX-lamBX-----------------------" << i << endl << (A * X.col(i) - B * X.col(i) * Lam(i, 0)).norm() << endl;
 
 		if (cnv >= nev) {
 			break;
@@ -183,6 +195,9 @@ void refineRitz::compute() {
 		for (int i = 0; i < pos.size(); ++i) {
 			refine(Lam(pos[i], 0), V0, P.middleCols(Xc + pos[i], num[i]));
 		}
+		/*for (int i = 0; i < X.cols(); ++i)
+			coutput << "AP-lamBP-----------------------" << i << endl << (A * P.col(Xc + i) - B * P.col(Xc + i) * Lam(i, 0)).norm() << endl;
+		system("pause");*/
 		Xc += X.cols();
 #endif // use_refine
 
@@ -190,6 +205,11 @@ void refineRitz::compute() {
 		memcpy(&P(0, Xc), &X(0, 0), A.rows() * X.cols() * sizeof(double));
 		Xc += X.cols();
 #endif // use_X
+
+#ifdef use_Xr
+		memcpy(&P(0, Xc), &realX(0, 0), A.rows() * X.cols() * sizeof(double));
+		Xc += X.cols();
+#endif // use_Xr
 	}
 	finish();
 }

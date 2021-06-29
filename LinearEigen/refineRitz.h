@@ -3,17 +3,22 @@
 #include<LinearEigenSolver.h>
 
 #define use_P
-#define use_refine
+//#define use_refine
 //#define use_X
+//#define use_Xr
 
 using namespace Eigen;
 class refineRitz : public LinearEigenSolver {
 public:
 	MatrixXd X, V, Lam, P;
 	int q, r, cgstep;
+	double ratio;
 	MatrixXd CA, CB, CAB, CBA;
 
 	ConjugateGradient<SparseMatrix<double, RowMajor, __int64>, Lower | Upper> linearsolver;
+	
+	//TODO 自定义预优
+	//BiCGSTAB<SparseMatrix<double, RowMajor, __int64>> linearsolver2;
 
 	//X必须与V不同
 	template<typename Derived_v, typename Derived_x>
@@ -35,7 +40,7 @@ public:
 		com_of_mul += A.rows() * V.cols();
 	}
 
-	refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r);
+	refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio);
 	void compute();
 };
 #endif

@@ -73,13 +73,13 @@ string matrices[1000] =
 	//"sym-pos/Geo_1438",
 
 
-	/*"sym-pos/apache1",	
+	//"sym-pos/apache1",	
 	"sym-pos/apache2",
-	"sym-pos/crankseg_1",*/
-	"sym-pos/hood",
-	/*"sym-pos/crankseg_2",
-	"sym-pos/bmwcra_1",
-	"sym-pos/inline_1",
+	//"sym-pos/crankseg_1",
+	//"sym-pos/hood",
+	//"sym-pos/crankseg_2",
+	//"sym-pos/bmwcra_1",
+	/*"sym-pos/inline_1",
 	"sym-pos/ldoor",
 	"sym-pos/Hook_1498",
 	"sym-pos/Serena",
@@ -211,7 +211,7 @@ int main() {
 			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r) 
 			rfresult << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			cout << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-			refineRitz rfritz(A, B, nev, cgstep, batch, r);
+			refineRitz rfritz(A, B, nev, cgstep, batch, r, 1.0/2);
 			rfritz.compute();
 
 			for (int i = 0; i < rfritz.eigenvalues.size(); ++i) {
