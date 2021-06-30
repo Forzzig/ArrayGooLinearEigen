@@ -218,6 +218,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, R
   typedef typename Lhs::Index Index;
   static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
+#pragma omp parallel for schedule(dynamic)
     for(Index j=0; j<lhs.outerSize(); ++j)
     {
       typename Res::RowXpr res_j(res.row(j));
