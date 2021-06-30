@@ -1,6 +1,6 @@
 #include<refineRitz.h>
 
-refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio)
+refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio, int Vsize)
 	: LinearEigenSolver(A, B, nev),
 	q(q),
 	r(r),
@@ -13,7 +13,8 @@ refineRitz::refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<
 	CB(q* (r + 2), q* (r + 2)),
 	CAB(q* (r + 2), q* (r + 2)),
 	CBA(q* (r + 2), q* (r + 2)),
-	ratio(ratio) {
+	ratio(ratio),
+	Vsize(Vsize) {
 
 	int dep = orthogonalization(X, B);
 	while (dep) {
@@ -48,7 +49,7 @@ void refineRitz::compute() {
 		if (realX.cols() != X.cols())
 			realX.resize(NoChange, X.cols());
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 		for (int i = 0; i < X.cols(); ++i) {
 			memcpy(&realX(0, i), &X(0, i), A.rows() * sizeof(double));
 			BX.col(i).noalias() = B * realX.col(i);
@@ -58,7 +59,7 @@ void refineRitz::compute() {
 		com_of_mul += realX.cols() * A.nonZeros();
 
 		for (int i = 0; i < r; ++i) {
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 			for (int j = 0; j < realX.cols(); ++j) {
 				memset(&X1(0, j), 0, A.rows() * sizeof(double));
 				linearsolver._solveWithGuess(BX.col(j) * Lam(j, 0) - AX.col(j), X1.col(j));
@@ -66,24 +67,26 @@ void refineRitz::compute() {
 
 				if (i == 0)
 					memcpy(&X1(0, j), &realX(0, j), A.rows() * sizeof(double));
+				
+				orthogonalization_single(X1.col(j), eigenvectors, B);
+				orthogonalization_single(X1.col(j), V0, B);
 			}
 			com_of_mul += A.rows() * realX.cols();
 			com_of_mul += realX.cols() * (A.nonZeros() + 4 * A.rows() +
 				cgstep * (A.nonZeros() + 7 * A.rows()));
 
-			orthogonalization(X1, eigenvectors, B);
-			orthogonalization(X1, V0, B);
 			int dep = orthogonalization(X1, B);
 			new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
 			new (&X1) Map<MatrixXd>(&V0(A.rows() - 1, V0.cols() - 1) + 1, A.rows(), realX.cols());
 
 			if (i < r - 1) {
 				
-				int nextX = realX.cols(); //ceil(realX.cols() * ratio);
-				/*realX.conservativeResize(NoChange, nextX);
-				new (&X1) Map<MatrixXd>(&X1(0, 0), A.rows(), realX.cols());*/
+				//int nextX = realX.cols(); 
+				int nextX = ceil(realX.cols() * ratio);
+				realX.conservativeResize(NoChange, nextX);
+				new (&X1) Map<MatrixXd>(&X1(0, 0), A.rows(), realX.cols());
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 				for (int j = 0; j < nextX; ++j) {
 					BX.col(j).noalias() = B * realX.col(j);
 					AX.col(j).noalias() = A * realX.col(j);
@@ -106,7 +109,7 @@ void refineRitz::compute() {
 		int dep = orthogonalization(X1, B);
 		new (&V0) Map<MatrixXd>(&V(0, 0), A.rows(), V0.cols() + X1.cols() - dep);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 		for (int j = 0; j < V0.cols(); ++j) {
 			AX.col(j).noalias() = A * V0.col(j);
 			BX.col(j).noalias() = B * V0.col(j);
@@ -193,7 +196,10 @@ void refineRitz::compute() {
 		}
 #pragma omp parallel for
 		for (int i = 0; i < pos.size(); ++i) {
-			refine(Lam(pos[i], 0), V0, P.middleCols(Xc + pos[i], num[i]));
+			if (num[i] == 1)
+				refine(Lam(pos[i], 0), V0, P.middleCols(Xc + pos[i], num[i]));
+			else
+				P.middleCols(Xc + pos[i], num[i]) = X.middleCols(Xc + pos[i], num[i]);
 		}
 		/*for (int i = 0; i < X.cols(); ++i)
 			coutput << "AP-lamBP-----------------------" << i << endl << (A * P.col(Xc + i) - B * P.col(Xc + i) * Lam(i, 0)).norm() << endl;

@@ -2,8 +2,8 @@
 #define __REFINERITZ_H__
 #include<LinearEigenSolver.h>
 
-#define use_P
-//#define use_refine
+//#define use_P
+#define use_refine
 //#define use_X
 //#define use_Xr
 
@@ -11,7 +11,7 @@ using namespace Eigen;
 class refineRitz : public LinearEigenSolver {
 public:
 	MatrixXd X, V, Lam, P;
-	int q, r, cgstep;
+	int q, r, cgstep, Vsize;
 	double ratio;
 	MatrixXd CA, CB, CAB, CBA;
 
@@ -40,7 +40,7 @@ public:
 		com_of_mul += A.rows() * V.cols();
 	}
 
-	refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio);
+	refineRitz(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r, double ratio, int Vsize);
 	void compute();
 };
 #endif

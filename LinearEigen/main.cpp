@@ -2,6 +2,7 @@
 #include "mkl.h"
 
 #include<iostream>
+#include<Eigen\Core>
 #include<Eigen\Sparse>
 #include<mtxio.h>
 #include<LOBPCG_I_Batch.h>
@@ -93,7 +94,9 @@ string matrices[1000] =
 
 int main() {
 	
-	//Eigen::initParallel();
+	Eigen::initParallel();
+	//omp_set_num_threads(n);
+	//Eigen::setNbThreads(0);
 
 	int n_matrices = 0;
 	string method;
@@ -211,7 +214,7 @@ int main() {
 			//(SparseMatrix<double, RowMajor, __int64>& A, SparseMatrix<double, RowMajor, __int64>& B, int nev, int cgstep, int q, int r) 
 			rfresult << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
 			cout << "精化Ritz法执行参数：" << endl << "特征值：" << nev << "个，batch大小：" << batch << "，Ritz向量扩展个数：" << r << ",最大CG迭代步：" << cgstep << endl;
-			refineRitz rfritz(A, B, nev, cgstep, batch, r, 1.0/2);
+			refineRitz rfritz(A, B, nev, cgstep, batch, r, 2.0/3, 3);
 			rfritz.compute();
 
 			for (int i = 0; i < rfritz.eigenvalues.size(); ++i) {
